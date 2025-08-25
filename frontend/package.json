@@ -41,7 +41,8 @@
     "ai",
     "code-editor",
     "bottom-sheet",
-    "monaco-editor"
+    "monaco-editor",
+    "vercel"
   ],
   "author": "Solar IT Team",
   "license": "MIT",

@@ -2,7 +2,6 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -19,9 +18,10 @@ export default defineConfig({
     host: true,
     open: true,
     proxy: {
-      // Проксировать API запросы на backend
       '/api': {
-        target: 'http://localhost:3000',
+        target: process.env.NODE_ENV === 'production' 
+          ? 'https://icoder-plus-backend.vercel.app' 
+          : 'http://localhost:3000',
         changeOrigin: true,
         secure: false
       }
@@ -29,15 +29,24 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false, // Отключаем sourcemap для production
+    minify: 'terser',
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          // Monaco Editor в отдельном чанке для оптимизации
           editor: ['monaco-editor', '@monaco-editor/react'],
           utils: ['diff2html', 'clsx', 'axios']
-        }
+        },
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
+      }
+    },
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
       }
     }
   },
@@ -47,17 +56,13 @@ export default defineConfig({
       'react-dom', 
       'lucide-react', 
       'axios',
-      // Предварительная оптимизация Monaco
       'monaco-editor/esm/vs/language/typescript/ts.worker',
       'monaco-editor/esm/vs/language/json/json.worker',
       'monaco-editor/esm/vs/editor/editor.worker'
     ]
   },
   define: {
-    // Определить глобальные константы
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version)
-  },
-  worker: {
-    format: 'es'
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV)
   }
 })

@@ -1,7 +1,6 @@
 {
   "name": "icoder-plus-backend",
   "version": "2.0.0",
-  "type": "module",
   "description": "iCoder Plus Backend - AI-powered code analysis API",
   "main": "dist/server.js",
   "scripts": {
@@ -23,14 +22,12 @@
     "joi": "^17.10.0",
     "morgan": "^1.10.0",
     "openai": "^4.20.1",
-    "rate-limiter-flexible": "^7.2.0",
     "winston": "^3.10.0"
   },
   "devDependencies": {
     "@types/compression": "^1.7.3",
     "@types/cors": "^2.8.14",
     "@types/express": "^4.17.17",
-    "@types/joi": "^17.2.3",
     "@types/morgan": "^1.9.5",
     "@types/node": "^20.5.9",
     "@typescript-eslint/eslint-plugin": "^6.5.0",

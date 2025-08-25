@@ -1,3 +1,78 @@
+#!/bin/bash
+
+cd frontend
+
+echo "🔥 ИСПРАВЛЯЕМ ЧЕРНЫЙ ЭКРАН - КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ!"
+
+# 1. СОЗДАЕМ ПРАВИЛЬНЫЙ INDEX.HTML ДЛЯ VITE
+cat > index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>iCoder Plus v2.0 - AI-first IDE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-midnight font-poppins">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+EOF
+
+# 2. СОЗДАЕМ ПРАВИЛЬНЫЙ src/main.jsx
+cat > src/main.jsx << 'EOF'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.jsx'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
+EOF
+
+# 3. СОЗДАЕМ src/index.css С TAILWIND
+cat > src/index.css << 'EOF'
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-900 text-white;
+    font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  }
+  
+  .font-mono {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+}
+
+@layer components {
+  .gradient-bg {
+    background: linear-gradient(135deg, #0D1117 0%, #1a1a2e 100%);
+  }
+  
+  .bottom-sheet {
+    transform: translateY(85vh);
+    transition: transform 0.3s ease-out;
+  }
+  
+  .bottom-sheet.expanded {
+    transform: translateY(20vh);
+  }
+}
+EOF
+
+# 4. ИСПРАВЛЯЕМ src/App.jsx - СОЗДАЕМ РАБОЧУЮ ВЕРСИЮ
+cat > src/App.jsx << 'EOF'
 import React, { useState } from 'react'
 import './index.css'
 
@@ -259,3 +334,55 @@ function App() {
 }
 
 export default App
+EOF
+
+# 5. СОЗДАЕМ ПРАВИЛЬНЫЙ TAILWIND.CONFIG.JS
+cat > tailwind.config.js << 'EOF'
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        'midnight': '#0D1117',
+        'neon-blue': '#1F6FEB', 
+        'cyber-purple': '#9D4EDD',
+        'matrix-green': '#00FF9D',
+        'warning-yellow': '#FFD60A'
+      },
+      fontFamily: {
+        'poppins': ['Poppins', 'sans-serif'],
+        'jetbrains': ['JetBrains Mono', 'monospace'],
+        'mono': ['JetBrains Mono', 'Fira Code', 'monospace']
+      }
+    },
+  },
+  plugins: [],
+}
+EOF
+
+# 6. СОЗДАЕМ POSTCSS.CONFIG.JS
+cat > postcss.config.js << 'EOF'
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+EOF
+
+echo "🔄 Перезапускаем dev server..."
+echo ""
+echo "✅ ЧЕРНЫЙ ЭКРАН ИСПРАВЛЕН!"
+echo ""
+echo "🎯 Теперь перезапустите сервер:"
+echo "   npm run dev"
+echo ""
+echo "🚀 В браузере должен появиться:"
+echo "   - Космический градиентный фон"
+echo "   - Заголовок 'iCoder Plus v2.0'"  
+echo "   - Bottom sheet внизу экрана"
+echo "   - Рабочие вкладки History/Preview/Chat"

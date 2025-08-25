@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-900 text-white;
+    font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  }
+  
+  .font-mono {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+}
+
+@layer components {
+  .gradient-bg {
+    background: linear-gradient(135deg, #0D1117 0%, #1a1a2e 100%);
+  }
+  
+  .bottom-sheet {
+    transform: translateY(85vh);
+    transition: transform 0.3s ease-out;
+  }
+  
+  .bottom-sheet.expanded {
+    transform: translateY(20vh);
+  }
+}

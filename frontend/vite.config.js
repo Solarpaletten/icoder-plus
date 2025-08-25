@@ -34,6 +34,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
+          // Monaco Editor в отдельном чанке для оптимизации
           editor: ['monaco-editor', '@monaco-editor/react'],
           utils: ['diff2html', 'clsx', 'axios']
         }
@@ -41,10 +42,22 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'lucide-react', 'axios']
+    include: [
+      'react', 
+      'react-dom', 
+      'lucide-react', 
+      'axios',
+      // Предварительная оптимизация Monaco
+      'monaco-editor/esm/vs/language/typescript/ts.worker',
+      'monaco-editor/esm/vs/language/json/json.worker',
+      'monaco-editor/esm/vs/editor/editor.worker'
+    ]
   },
   define: {
     // Определить глобальные константы
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version)
+  },
+  worker: {
+    format: 'es'
   }
 })

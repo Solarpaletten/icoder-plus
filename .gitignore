@@ -1,0 +1,24 @@
+Logs
+*.log
+logs/
+Build outputs
+build/
+*.apk
+*.aab
+Temporary files
+*.tmp
+.DS_Store
+node_modules/
+
+.env
+.env*
+*.env
+.env
+
+# Render specific
+.render/
+render.yaml.bak
+
+# Additional temp files
+*.log
+cache/

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iCoder Plus v2.0 - AI-first IDE</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0D1117 0%, #1a1a2e 100%);
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'midnight': '#0D1117',
+                        'neon-blue': '#1F6FEB',
+                        'cyber-purple': '#9D4EDD',
+                        'matrix-green': '#00FF9D',
+                        'warning-yellow': '#FFD60A'
+                    },
+                    fontFamily: {
+                        'poppins': ['Poppins', 'sans-serif'],
+                        'jetbrains': ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Sample files data
+        const sampleFiles = {
+            "App.js": [
+                {
+                    versionName: "v1.0",
+                    timestamp: Date.now() - 86400000,
+                    content: "var message = 'Hello World';\nconsole.log(message);",
+                    aiNote: "🆕 New file created",
+                    aiReview: ["⚠️ Replace 'var' with 'const'", "🔇 Remove console.log before production"],
+                    isAIFix: false
+                },
+                {
+                    versionName: "v1.1",
+                    timestamp: Date.now() - 3600000,
+                    content: "const message = 'Hello iCoder Plus';\nfunction greet() { return message; }",
+                    aiNote: "✏️ Code updated: improved variable declaration and added function",
+                    aiReview: ["✅ Good use of const", "✨ Consider adding JSDoc comments"],
+                    isAIFix: true
+                }
+            ],
+            "utils.js": [
+                {
+                    versionName: "v1.0",
+                    timestamp: Date.now() - 7200000,
+                    content: "export function calculateSum(a, b) {\n  return a + b;\n}",
+                    aiNote: "🆕 Utility function created",
+                    aiReview: ["✅ Clean function implementation", "💡 Consider adding type validation"],
+                    isAIFix: false
+                }
+            ]
+        };
+
+        function iCoderPlus() {
+            const [isOpen, setIsOpen] = useState(true);
+            const [files, setFiles] = useState(sampleFiles);
+            const [selectedFile, setSelectedFile] = useState("App.js");
+            const [activeTab, setActiveTab] = useState("history");
+            const [chat, setChat] = useState([
+                { role: "ai", text: "🤖 Hi! I'm your AI coding assistant. Ask me anything about your code!" }
+            ]);
+            const [chatInput, setChatInput] = useState("");
+            const [output, setOutput] = useState("");
+
+            const handleDrop = (e) => {
+                e.preventDefault();
+                // Demo: simulate file drop
+                const timestamp = Date.now();
+                const newVersion = `v1.${files[selectedFile]?.length || 0}`;
+                
+                setFiles(prev => ({
+                    ...prev,
+                    "demo.js": [
+                        ...(prev["demo.js"] || []),
+                        {
+                            versionName: newVersion,
+                            timestamp,
+                            content: "// Drag & dropped file\nfunction demo() {\n  return 'Hello from dropped file';\n}",
+                            aiNote: "📎 File dropped and processed",
+                            aiReview: ["✅ Clean function structure", "💡 Consider adding return type annotation"],
+                            isAIFix: false
+                        }
+                    ]
+                }));
+                setSelectedFile("demo.js");
+            };
+
+            const handleAIFix = () => {
+                const current = files[selectedFile];
+                const last = current[current.length - 1];
+                const nextVersion = `v${parseInt(last.versionName.split('.')[0].slice(1)) + 1}.0`;
+                
+                setFiles(prev => ({
+                    ...prev,
+                    [selectedFile]: [
+                        ...prev[selectedFile],
+                        {
+                            versionName: nextVersion,
+                            timestamp: Date.now(),
+                            content: last.content.replace(/var /g, 'const ').replace(/console\.log.*?\n/g, ''),
+                            aiNote: "🤖 AI applied automatic fixes",
+                            aiReview: ["✅ Applied modern JavaScript standards"],
+                            isAIFix: true
+                        }
+                    ]
+                }));
+            };
+
+            const handleSendChat = () => {
+                if (!chatInput.trim()) return;
+                
+                setChat(prev => [
+                    ...prev,
+                    { role: "user", text: chatInput },
+                    { role: "ai", text: "🤖 This is a demo response. In the real app, I'd analyze your code and provide specific insights!" }
+                ]);
+                setChatInput("");
+            };
+
+            const handleRunCode = () => {
+                const current = files[selectedFile];
+                if (!current) return;
+                
+                const code = current[current.length - 1].content;
+                try {
+                    // Demo execution
+                    setOutput("✅ Code executed successfully!\nOutput: Hello from iCoder Plus demo");
+                } catch (err) {
+                    setOutput("❌ Error: " + err.message);
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-midnight to-gray-900 text-white">
+                    {/* Main content area */}
+                    <div className="p-8">
+                        <div className="text-center mb-8">
+                            <h1 className="text-4xl font-bold bg-gradient-to-r from-neon-blue to-cyber-purple bg-clip-text text-transparent">
+                                ⚡ iCoder Plus v2.0
+                            </h1>
+                            <p className="text-gray-300 mt-2">AI-first IDE in a bottom sheet</p>
+                        </div>
+                        
+                        <div className="text-center text-gray-400">
+                            <p>Drag a file below or interact with the demo ⬇</p>
+                        </div>
+                    </div>
+
+                    {/* Bottom Sheet */}
+                    <div className="fixed inset-x-0 bottom-0">
+                        {/* Handle */}
+                        <div
+                            className="flex justify-center p-3 bg-gray-800 cursor-pointer hover:bg-gray-700 transition-colors"
+                            onClick={() => setIsOpen(!isOpen)}
+                        >
+                            <div className="w-12 h-1.5 rounded-full bg-gray-400"></div>
+                        </div>
+
+                        {/* Content */}
+                        <div
+                            className={`bg-midnight border-t border-gray-700 transition-all duration-300 ${
+                                isOpen ? "h-[80vh]" : "h-[15vh]"
+                            } overflow-hidden`}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={handleDrop}
+                        >
+                            <div className="p-6 h-full flex flex-col">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-xl font-bold">🤖 iCoder Plus</h2>
+                                    <div className="flex space-x-2 text-sm">
+                                        <button
+                                            onClick={() => setActiveTab("history")}
+                                            className={`px-3 py-1 rounded ${activeTab === "history" ? "bg-neon-blue" : "bg-gray-700 hover:bg-gray-600"}`}
+                                        >
+                                            📜 History
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveTab("preview")}
+                                            className={`px-3 py-1 rounded ${activeTab === "preview" ? "bg-neon-blue" : "bg-gray-700 hover:bg-gray-600"}`}
+                                        >
+                                            ▶ Preview
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveTab("chat")}
+                                            className={`px-3 py-1 rounded ${activeTab === "chat" ? "bg-neon-blue" : "bg-gray-700 hover:bg-gray-600"}`}
+                                        >
+                                            💬 AI Chat
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* File List */}
+                                <div className="flex space-x-2 mb-4 overflow-x-auto">
+                                    {Object.keys(files).map((fname) => (
+                                        <button
+                                            key={fname}
+                                            onClick={() => setSelectedFile(fname)}
+                                            className={`px-3 py-2 rounded text-sm whitespace-nowrap ${
+                                                selectedFile === fname ? "bg-neon-blue" : "bg-gray-700 hover:bg-gray-600"
+                                            }`}
+                                        >
+                                            📄 {fname}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Tab Content */}
+                                <div className="flex-1 overflow-hidden">
+                                    {activeTab === "history" && (
+                                        <div className="h-full overflow-y-auto space-y-4">
+                                            <div className="flex justify-between items-center">
+                                                <h3 className="font-semibold">📜 Version History: {selectedFile}</h3>
+                                                <button
+                                                    onClick={handleAIFix}
+                                                    className="bg-cyber-purple hover:bg-purple-600 px-4 py-2 rounded text-sm"
+                                                >
+                                                    💡 Apply AI Fix
+                                                </button>
+                                            </div>
+                                            
+                                            {selectedFile && files[selectedFile] && (
+                                                <div className="space-y-3">
+                                                    {files[selectedFile].map((version, idx) => (
+                                                        <div key={idx} className="bg-gray-800 rounded p-4">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <span className="font-jetbrains text-sm text-matrix-green">
+                                                                    {version.versionName}
+                                                                </span>
+                                                                <span className="text-xs text-gray-400">
+                                                                    {new Date(version.timestamp).toLocaleString()}
+                                                                </span>
+                                                                {version.isAIFix && (
+                                                                    <span className="bg-cyber-purple text-xs px-2 py-1 rounded">
+                                                                        AI FIXED
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-matrix-green text-sm mb-2">
+                                                                AI Note: {version.aiNote}
+                                                            </p>
+                                                            <div className="bg-gray-900 rounded p-3 code-font text-xs overflow-x-auto mb-2">
+                                                                <pre>{version.content}</pre>
+                                                            </div>
+                                                            <div className="text-warning-yellow text-xs">
+                                                                <p className="font-semibold mb-1">AI Review:</p>
+                                                                <ul className="list-disc list-inside space-y-1">
+                                                                    {version.aiReview.map((review, i) => (
+                                                                        <li key={i}>{review}</li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {activeTab === "preview" && (
+                                        <div className="h-full space-y-4">
+                                            <div className="flex justify-between items-center">
+                                                <h3 className="font-semibold">▶ Live Preview</h3>
+                                                <button
+                                                    onClick={handleRunCode}
+                                                    className="bg-matrix-green text-black hover:bg-green-400 px-4 py-2 rounded text-sm font-semibold"
+                                                >
+                                                    ▶ Run Code
+                                                </button>
+                                            </div>
+                                            
+                                            <div className="bg-black rounded p-4 h-48 overflow-y-auto">
+                                                <div className="text-matrix-green text-sm code-font">
+                                                    <div className="text-gray-400 mb-2">$ Output Console</div>
+                                                    <pre>{output || "Click 'Run Code' to execute..."}</pre>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {activeTab === "chat" && (
+                                        <div className="h-full flex flex-col space-y-4">
+                                            <h3 className="font-semibold">💬 AI Chat Assistant</h3>
+                                            
+                                            <div className="flex-1 bg-gray-800 rounded p-4 overflow-y-auto space-y-3">
+                                                {chat.map((message, idx) => (
+                                                    <div key={idx} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                                                        <div className={`max-w-xs px-3 py-2 rounded text-sm ${
+                                                            message.role === "user" 
+                                                                ? "bg-neon-blue text-white" 
+                                                                : "bg-cyber-purple text-white"
+                                                        }`}>
+                                                            {message.text}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            
+                                            <div className="flex space-x-2">
+                                                <input
+                                                    type="text"
+                                                    value={chatInput}
+                                                    onChange={(e) => setChatInput(e.target.value)}
+                                                    placeholder="Ask AI about your code..."
+                                                    className="flex-1 px-3 py-2 bg-gray-700 rounded border border-gray-600 focus:border-neon-blue focus:outline-none"
+                                                    onKeyPress={(e) => e.key === "Enter" && handleSendChat()}
+                                                />
+                                                <button
+                                                    onClick={handleSendChat}
+                                                    className="bg-cyber-purple hover:bg-purple-600 px-4 py-2 rounded"
+                                                >
+                                                    Send
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="mt-4 text-center text-gray-400 text-sm">
+                                    💡 This is a demo of iCoder Plus v2.0 - Drag & drop files, try AI fixes, run code, and chat with AI!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<iCoderPlus />, document.getElementById('app'));
+    </script>
+</body>
+</html>

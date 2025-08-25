@@ -248,3 +248,13 @@ export const AI_CONFIG = {
     optimization: true
   }
 };
+
+export const aiService = {
+  generateReview: generateAIReview,
+  generateFixes: applyAIFixes,
+  generateCommitNote: generateAIComment,
+  generateOptimizations: generateOptimizationSuggestions,
+  chat: askAI,
+  applyFixes: applyAIFixes,
+  getStatus: () => AI_CONFIG,
+};

@@ -6,14 +6,14 @@ import compression from 'compression'
 import dotenv from 'dotenv'
 import { createLogger, format, transports } from 'winston'
 
-// Import routes
-import aiRoutes from '@/routes/ai'
+// --- ROUTES ---
+import aiRoutes from '@routes/ai'
 import filesRoutes from '@routes/files'
 import historyRoutes from '@routes/history'
 
-// Import middleware
+// --- MIDDLEWARE ---
 import { errorHandler } from '@middleware/errorHandler'
-import { rateLimiter } from '@middleware/rateLimiter'
+import { rateLimiterMiddleware } from '@middleware/rateLimiter'
 
 // Load environment variables
 dotenv.config()
@@ -71,8 +71,8 @@ app.use(morgan('combined', {
   stream: { write: (message) => logger.info(message.trim()) }
 }))
 
-// Rate limiting
-app.use('/api', rateLimiter)
+// ✅ Rate limiting
+app.use('/api', rateLimiterMiddleware)
 
 // Health check endpoint
 app.get('/health', (req, res) => {

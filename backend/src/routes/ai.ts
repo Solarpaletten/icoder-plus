@@ -1,8 +1,10 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import Joi from 'joi'
-import { aiService } from '@services/aiService'
-import { validateRequest } from '@middleware/validation'
-import { AIAnalysisRequest, AIAnalysisResponse, AIChatRequest, AIChatResponse } from '@types/ai'
+import { aiService } from "@services/aiService";
+import { validateRequest } from "@middleware/validation";
+import type { AIAnalysisRequest, AIAnalysisResponse, AIChatRequest, AIChatResponse } from "@types/ai";
+
+
 
 const router = Router()
 

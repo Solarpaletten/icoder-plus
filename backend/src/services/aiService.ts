@@ -1,24 +1,28 @@
-// src/services/aiService.js - Real AI Integration for iCoder Plus v2.0
+// AI Service for iCoder Plus Backend - Fixed TypeScript version
 import OpenAI from 'openai';
+import type { AIConfig } from '../types/ai';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true // Only for client-side demo - move to backend in production!
+  apiKey: process.env.OPENAI_API_KEY || '',
 });
 
 // Anthropic Claude alternative (uncomment if using Claude)
 // import Anthropic from '@anthropic-ai/sdk';
 // const anthropic = new Anthropic({
-//   apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY,
+//   apiKey: process.env.ANTHROPIC_API_KEY || '',
 // });
 
 /**
  * Generate AI commit note based on code changes
  */
-export async function generateAIComment(oldCode, newCode, fileName = '') {
-  if (!import.meta.env.VITE_OPENAI_API_KEY) {
-    return "🤖 AI service not configured - add VITE_OPENAI_API_KEY to .env";
+export async function generateAIComment(
+  oldCode: string, 
+  newCode: string, 
+  fileName: string = ''
+): Promise<string> {
+  if (!process.env.OPENAI_API_KEY) {
+    return "🤖 AI service not configured - add OPENAI_API_KEY to .env";
   }
 
   try {
@@ -49,7 +53,7 @@ Respond with a single sentence starting with an emoji that describes the main ch
       temperature: 0.3
     });
 
-    return response.choices[0].message.content.trim();
+    return response.choices[0]?.message?.content?.trim() || "✏️ Code updated";
   } catch (error) {
     console.error('AI Comment generation failed:', error);
     return "✏️ Code updated (AI analysis failed)";
@@ -59,8 +63,11 @@ Respond with a single sentence starting with an emoji that describes the main ch
 /**
  * Generate AI code review with suggestions
  */
-export async function generateAIReview(code, fileName = '') {
-  if (!import.meta.env.VITE_OPENAI_API_KEY) {
+export async function generateAIReview(
+  code: string, 
+  fileName: string = ''
+): Promise<string[]> {
+  if (!process.env.OPENAI_API_KEY) {
     return ["⚠️ AI service not configured - add API key to enable reviews"];
   }
 
@@ -85,7 +92,8 @@ Example format: ["🔒 Use const instead of var for immutable variables", "⚡ C
       temperature: 0.2
     });
 
-    const content = response.choices[0].message.content.trim();
+    const content = response.choices[0]?.message?.content?.trim();
+    if (!content) return ["⚠️ AI review temporarily unavailable"];
     
     try {
       const suggestions = JSON.parse(content);
@@ -103,8 +111,11 @@ Example format: ["🔒 Use const instead of var for immutable variables", "⚡ C
 /**
  * Apply AI-powered automatic fixes to code
  */
-export async function applyAIFixes(code, fileName = '') {
-  if (!import.meta.env.VITE_OPENAI_API_KEY) {
+export async function applyAIFixes(
+  code: string, 
+  fileName: string = ''
+): Promise<string> {
+  if (!process.env.OPENAI_API_KEY) {
     // Fallback to basic fixes if AI not available
     return applyBasicFixes(code);
   }
@@ -132,8 +143,8 @@ ${code}
       temperature: 0.1
     });
 
-    const fixedCode = response.choices[0].message.content
-      .replace(/^```[\w]*\n?/, '')
+    const fixedCode = response.choices[0]?.message?.content
+      ?.replace(/^```[\w]*\n?/, '')
       .replace(/\n?```$/, '')
       .trim();
 
@@ -147,11 +158,11 @@ ${code}
 /**
  * Basic fixes fallback (no AI required)
  */
-function applyBasicFixes(code) {
+function applyBasicFixes(code: string): string {
   let fixed = code;
   
   // Replace var with const/let
-  fixed = fixed.replace(/\bvar\s+(\w+)\s*=/g, (match, varName) => {
+  fixed = fixed.replace(/\bvar\s+(\w+)\s*=/g, (match: string, varName: string) => {
     // Simple heuristic: if assigned once, use const, otherwise let
     const reassignments = (code.match(new RegExp(`\\b${varName}\\s*=`, 'g')) || []).length;
     return reassignments > 1 ? `let ${varName} =` : `const ${varName} =`;
@@ -161,7 +172,7 @@ function applyBasicFixes(code) {
   fixed = fixed.replace(/console\.log\([^;]*\);?\n?/g, '');
   
   // Remove trailing whitespace
-  fixed = fixed.split('\n').map(line => line.trimEnd()).join('\n');
+  fixed = fixed.split('\n').map((line: string) => line.trimEnd()).join('\n');
   
   return fixed.trim();
 }
@@ -169,8 +180,12 @@ function applyBasicFixes(code) {
 /**
  * AI Chat Assistant for code questions
  */
-export async function askAI(question, code, fileName = '') {
-  if (!import.meta.env.VITE_OPENAI_API_KEY) {
+export async function askAI(
+  question: string, 
+  code: string, 
+  fileName: string = ''
+): Promise<string> {
+  if (!process.env.OPENAI_API_KEY) {
     return "🤖 AI chat not configured - please add your OpenAI API key to .env file";
   }
 
@@ -194,7 +209,7 @@ Provide a helpful, concise answer. If the question is about a specific function 
       temperature: 0.4
     });
 
-    return response.choices[0].message.content.trim();
+    return response.choices[0]?.message?.content?.trim() || "🤖 Sorry, I couldn't process your question.";
   } catch (error) {
     console.error('AI Chat failed:', error);
     return "🤖 Sorry, I'm having trouble connecting to AI services right now. Please try again later.";
@@ -204,8 +219,11 @@ Provide a helpful, concise answer. If the question is about a specific function 
 /**
  * Generate AI-powered suggestions for code optimization
  */
-export async function generateOptimizationSuggestions(code, fileName = '') {
-  if (!import.meta.env.VITE_OPENAI_API_KEY) {
+export async function generateOptimizationSuggestions(
+  code: string, 
+  fileName: string = ''
+): Promise<string[]> {
+  if (!process.env.OPENAI_API_KEY) {
     return ["💡 Enable AI features by adding your OpenAI API key"];
   }
 
@@ -227,34 +245,50 @@ Focus on: performance bottlenecks, memory usage, algorithmic improvements.`;
       temperature: 0.3
     });
 
-    const suggestions = JSON.parse(response.choices[0].message.content);
-    return Array.isArray(suggestions) ? suggestions : [suggestions];
+    const content = response.choices[0]?.message?.content;
+    if (!content) return ["⚡ AI optimization analysis temporarily unavailable"];
+
+    try {
+      const suggestions = JSON.parse(content);
+      return Array.isArray(suggestions) ? suggestions : [content];
+    } catch {
+      return ["⚡ AI optimization analysis temporarily unavailable"];
+    }
   } catch (error) {
     console.error('Optimization suggestions failed:', error);
     return ["⚡ AI optimization analysis temporarily unavailable"];
   }
 }
 
-// Export configuration info
-export const AI_CONFIG = {
-  isConfigured: !!import.meta.env.VITE_OPENAI_API_KEY,
-  provider: 'OpenAI',
-  model: 'gpt-4o-mini',
-  features: {
-    commitNotes: true,
-    codeReview: true,
-    autoFix: true,
-    chat: true,
-    optimization: true
-  }
-};
+/**
+ * Chat with AI about code (for API routes)
+ */
+export async function chat(params: {
+  message: string;
+  code?: string;
+  fileName?: string;
+  conversationId?: string;
+}): Promise<string> {
+  return await askAI(params.message, params.code || '', params.fileName || '');
+}
 
-export const aiService = {
-  generateReview: generateAIReview,
-  generateFixes: applyAIFixes,
-  generateCommitNote: generateAIComment,
-  generateOptimizations: generateOptimizationSuggestions,
-  chat: askAI,
-  applyFixes: applyAIFixes,
-  getStatus: () => AI_CONFIG,
-};
+/**
+ * Get AI service status
+ */
+export function getStatus(): AIConfig {
+  return {
+    isConfigured: !!process.env.OPENAI_API_KEY,
+    provider: 'OpenAI',
+    model: 'gpt-4o-mini',
+    features: {
+      commitNotes: true,
+      codeReview: true,
+      autoFix: true,
+      chat: true,
+      optimization: true
+    }
+  };
+}
+
+// Export configuration info
+export const AI_CONFIG: AIConfig = getStatus();

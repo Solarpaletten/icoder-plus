@@ -1,15 +1,15 @@
 {
   "name": "icoder-plus-backend",
   "version": "2.0.0",
+  "type": "module",
   "description": "iCoder Plus Backend - AI-powered code analysis API",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/server.ts",
+    "dev": "nodemon --watch src --ext ts --exec ts-node -r tsconfig-paths/register src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
-    "test": "jest",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -23,7 +23,7 @@
     "joi": "^17.10.0",
     "morgan": "^1.10.0",
     "openai": "^4.20.1",
-    "rate-limiter-flexible": "^2.4.2",
+    "rate-limiter-flexible": "^7.2.0",
     "winston": "^3.10.0"
   },
   "devDependencies": {

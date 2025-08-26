@@ -125,3 +125,5 @@ Contributions are welcome! Fork the repo, create a PR, and join the journey 🚀
 📜 License
 
 MIT License. Free to use, modify, and distribute.
+
+new structura

@@ -84,3 +84,4 @@ storybook-static/
 # Temporary files
 *.tmp
 *.temp
+.env

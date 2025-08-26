@@ -127,3 +127,5 @@ Contributions are welcome! Fork the repo, create a PR, and join the journey 🚀
 MIT License. Free to use, modify, and distribute.
 
 new structura
+
+backend/package.json

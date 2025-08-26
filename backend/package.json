@@ -9,6 +9,7 @@
     "express": "^4.19.2",
     "openai": "^5.16.0",
     "ts-node": "^2.0.0",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.4.0"
   },
   "devDependencies": {

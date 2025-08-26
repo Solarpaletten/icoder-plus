@@ -1,0 +1,14 @@
+{
+  "name": "icoder-plus-fullstack",
+  "version": "2.0.0",
+  "description": "iCoder Plus - Full Stack Application",
+  "scripts": {
+    "install": "cd backend && npm install",
+    "build": "cd backend && npm run build",
+    "start": "cd backend && npm start",
+    "dev": "cd backend && npm run dev"
+  },
+  "keywords": ["ide", "ai", "code-editor"],
+  "author": "Solar IT Team",
+  "license": "MIT"
+}

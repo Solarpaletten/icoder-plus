@@ -15,15 +15,7 @@
     "noEmit": false,
     "declaration": false,
     "outDir": "./dist",
-    "rootDir": "./src",
-    "baseUrl": "./src",
-    "paths": {
-      "@types/*": ["types/*"],
-      "@services/*": ["services/*"],
-      "@routes/*": ["routes/*"],
-      "@middleware/*": ["middleware/*"],
-      "@utils/*": ["utils/*"]
-    }
+    "rootDir": "./src"
   },
   "include": [
     "src/**/*.ts"

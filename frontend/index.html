@@ -3,64 +3,544 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>iCoder Plus — AI-first IDE v2.0</title>
+    <title>iCoder Plus — AI-first IDE Sandbox</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js"></script>
     <style>
-      body {
-        margin: 0; padding: 20px; font-family: system-ui, sans-serif;
-        background: radial-gradient(circle at 20% 0%, #1a2340 0%, #0b1220 55%);
-        color: white; min-height: 100vh;
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { 
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        background: linear-gradient(135deg, #0b1426 0%, #1e2a47 100%);
+        color: #e2e8f0; overflow: hidden; height: 100vh;
       }
-      .container { max-width: 800px; margin: 0 auto; }
-      .title { font-size: 40px; font-weight: 800; margin: 20px 0; }
-      .card { background: #121a2a; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 18px; margin: 18px 0; }
-      .status { display: flex; align-items: center; gap: 8px; margin: 12px 0; }
-      .dot { width: 8px; height: 8px; border-radius: 50%; }
-      .green { background: #29d398; }
-      .code { background: #0b1120; padding: 12px; border-radius: 8px; font-family: monospace; color: #cde1ff; font-size: 12px; }
+      
+      /* Layout */
+      .ide-container { display: flex; height: 100vh; }
+      .sidebar { width: 300px; background: #1a1f36; border-right: 1px solid #2d3748; display: flex; flex-direction: column; }
+      .main-area { flex: 1; display: flex; flex-direction: column; }
+      .editor-container { flex: 1; position: relative; }
+      .bottom-sheet { 
+        height: 250px; background: #1a1f36; border-top: 1px solid #2d3748;
+        display: flex; transition: height 0.3s ease;
+      }
+      .bottom-sheet.collapsed { height: 40px; }
+      
+      /* Sidebar */
+      .sidebar-header { padding: 16px; background: #151a2e; border-bottom: 1px solid #2d3748; }
+      .sidebar-content { flex: 1; overflow-y: auto; }
+      
+      /* File List */
+      .file-item { 
+        padding: 8px 16px; cursor: pointer; border-bottom: 1px solid #2d374855;
+        display: flex; align-items: center; gap: 8px; transition: background 0.2s;
+      }
+      .file-item:hover { background: #2d3748; }
+      .file-item.active { background: #3182ce; color: white; }
+      .file-icon { width: 16px; height: 16px; background: #4299e1; border-radius: 2px; }
+      
+      /* Bottom Sheet Tabs */
+      .bottom-tabs { 
+        width: 200px; background: #151a2e; border-right: 1px solid #2d3748;
+        display: flex; flex-direction: column;
+      }
+      .tab-button { 
+        padding: 12px 16px; border: none; background: transparent; color: #a0aec0;
+        text-align: left; cursor: pointer; border-bottom: 1px solid #2d374855;
+        transition: all 0.2s;
+      }
+      .tab-button:hover { background: #2d3748; }
+      .tab-button.active { background: #3182ce; color: white; }
+      
+      .tab-content { flex: 1; padding: 16px; overflow-y: auto; }
+      
+      /* Components */
+      .card { 
+        background: #2d3748; border: 1px solid #4a5568; border-radius: 8px;
+        padding: 16px; margin-bottom: 16px;
+      }
+      .input { 
+        width: 100%; padding: 8px 12px; background: #1a202c; border: 1px solid #4a5568;
+        border-radius: 6px; color: #e2e8f0; outline: none;
+      }
+      .button { 
+        padding: 8px 16px; background: #3182ce; color: white; border: none;
+        border-radius: 6px; cursor: pointer; transition: background 0.2s;
+      }
+      .button:hover { background: #2c5aa0; }
+      .button:disabled { opacity: 0.5; cursor: not-allowed; }
+      
+      /* AI Chat */
+      .chat-messages { 
+        max-height: 150px; overflow-y: auto; background: #1a202c; border-radius: 6px;
+        padding: 12px; margin-bottom: 12px; border: 1px solid #4a5568;
+      }
+      .chat-input-row { display: flex; gap: 8px; }
+      .chat-input-row input { flex: 1; }
+      
+      /* Preview */
+      .preview-iframe { 
+        width: 100%; height: 200px; border: 1px solid #4a5568; border-radius: 6px;
+        background: white;
+      }
+      
+      /* Version History */
+      .version-item { 
+        padding: 8px; background: #1a202c; border: 1px solid #4a5568;
+        border-radius: 6px; margin-bottom: 8px; font-family: monospace; font-size: 12px;
+      }
+      
+      /* Status Indicators */
+      .status-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
+      .status-connected { background: #48bb78; }
+      .status-error { background: #f56565; }
+      .status-checking { background: #ed8936; }
+      
+      /* Collapse Button */
+      .collapse-btn { 
+        position: absolute; top: 8px; right: 8px; background: #2d3748; border: none;
+        color: #a0aec0; padding: 4px 8px; border-radius: 4px; cursor: pointer;
+      }
+      
+      /* File Upload */
+      .upload-area { 
+        border: 2px dashed #4a5568; border-radius: 8px; padding: 20px;
+        text-align: center; margin: 16px; color: #a0aec0; cursor: pointer;
+        transition: all 0.2s;
+      }
+      .upload-area:hover { border-color: #3182ce; color: #3182ce; }
+      .upload-area.dragover { border-color: #48bb78; background: rgba(72, 187, 120, 0.1); }
     </style>
   </head>
   <body>
     <div id="root"></div>
     <script>window.API_BASE = "https://icoder-plus.onrender.com";</script>
     <script type="text/babel">
-      const { useState, useEffect } = React;
+      const { useState, useEffect, useRef } = React;
       
-      function App() {
-        const [health, setHealth] = useState(null);
+      // File Management Component
+      function FileManager({ files, activeFile, onFileSelect, onFileUpload }) {
+        const [dragOver, setDragOver] = useState(false);
         
-        useEffect(() => {
-          fetch(window.API_BASE + '/health')
-            .then(res => res.json())
-            .then(data => setHealth({ ok: true, data }))
-            .catch(e => setHealth({ ok: false, data: { error: e.message }}));
-        }, []);
+        const handleDrop = (e) => {
+          e.preventDefault();
+          setDragOver(false);
+          const files = Array.from(e.dataTransfer.files);
+          files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              onFileUpload(file.name, e.target.result);
+            };
+            reader.readAsText(file);
+          });
+        };
         
         return (
-          <div className="container">
-            <div className="title">iCoder Plus Live</div>
-            <div className="card">
-              <div className="status">
-                <div className="dot green"></div>
-                <strong>Frontend: Running</strong>
+          <div>
+            <div 
+              className={`upload-area ${dragOver ? 'dragover' : ''}`}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+            >
+              Drop files here or click to upload
+            </div>
+            <div>
+              {files.map(file => (
+                <div 
+                  key={file.name}
+                  className={`file-item ${activeFile?.name === file.name ? 'active' : ''}`}
+                  onClick={() => onFileSelect(file)}
+                >
+                  <div className="file-icon"></div>
+                  <span>{file.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+      
+      // Monaco Editor Component
+      function CodeEditor({ value, onChange, language = 'javascript' }) {
+        const editorRef = useRef();
+        const containerRef = useRef();
+        
+        useEffect(() => {
+          if (typeof monaco !== 'undefined' && containerRef.current) {
+            editorRef.current = monaco.editor.create(containerRef.current, {
+              value: value || '',
+              language: language,
+              theme: 'vs-dark',
+              fontSize: 14,
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+              wordWrap: 'on'
+            });
+            
+            editorRef.current.onDidChangeModelContent(() => {
+              onChange(editorRef.current.getValue());
+            });
+          }
+          
+          return () => {
+            if (editorRef.current) {
+              editorRef.current.dispose();
+            }
+          };
+        }, []);
+        
+        useEffect(() => {
+          if (editorRef.current && value !== editorRef.current.getValue()) {
+            editorRef.current.setValue(value || '');
+          }
+        }, [value]);
+        
+        return <div ref={containerRef} style={{ height: '100%', width: '100%' }} />;
+      }
+      
+      // AI Chat Component
+      function AIChat() {
+        const [messages, setMessages] = useState([]);
+        const [input, setInput] = useState('');
+        const [loading, setLoading] = useState(false);
+        
+        const sendMessage = async () => {
+          if (!input.trim() || loading) return;
+          
+          const userMessage = input;
+          setInput('');
+          setMessages(prev => [...prev, { type: 'user', content: userMessage }]);
+          setLoading(true);
+          
+          try {
+            const response = await fetch(`${window.API_BASE}/api/ai/chat`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ message: userMessage })
+            });
+            const data = await response.json();
+            setMessages(prev => [...prev, { 
+              type: 'ai', 
+              content: data.response || 'No response' 
+            }]);
+          } catch (error) {
+            setMessages(prev => [...prev, { 
+              type: 'error', 
+              content: 'Error: ' + error.message 
+            }]);
+          } finally {
+            setLoading(false);
+          }
+        };
+        
+        return (
+          <div>
+            <div className="chat-messages">
+              {messages.map((msg, i) => (
+                <div key={i} style={{
+                  marginBottom: 8,
+                  padding: 8,
+                  background: msg.type === 'user' ? '#3182ce' : msg.type === 'error' ? '#e53e3e' : '#2d3748',
+                  borderRadius: 6
+                }}>
+                  <strong>{msg.type === 'user' ? 'You' : msg.type === 'error' ? 'Error' : 'AI'}:</strong> {msg.content}
+                </div>
+              ))}
+              {loading && <div style={{ color: '#a0aec0' }}>AI is thinking...</div>}
+            </div>
+            <div className="chat-input-row">
+              <input 
+                className="input"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask AI about your code..."
+                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+              />
+              <button className="button" onClick={sendMessage} disabled={loading}>
+                Send
+              </button>
+            </div>
+          </div>
+        );
+      }
+      
+      // Live Preview Component
+      function LivePreview({ code }) {
+        const [htmlOutput, setHtmlOutput] = useState('');
+        
+        useEffect(() => {
+          try {
+            if (code.includes('<html') || code.includes('<!DOCTYPE')) {
+              setHtmlOutput(code);
+            } else if (code.trim().startsWith('<')) {
+              setHtmlOutput(`<!DOCTYPE html><html><body>${code}</body></html>`);
+            } else {
+              const jsCode = `
+                <!DOCTYPE html>
+                <html>
+                <body>
+                  <div id="output"></div>
+                  <script>
+                    console.log = function(msg) {
+                      document.getElementById('output').innerHTML += '<div>' + msg + '</div>';
+                    };
+                    try {
+                      ${code}
+                    } catch (e) {
+                      document.getElementById('output').innerHTML = '<div style="color:red">Error: ' + e.message + '</div>';
+                    }
+                  </script>
+                </body>
+                </html>
+              `;
+              setHtmlOutput(jsCode);
+            }
+          } catch (error) {
+            setHtmlOutput(`<html><body><div style="color:red">Error: ${error.message}</div></body></html>`);
+          }
+        }, [code]);
+        
+        return (
+          <iframe 
+            className="preview-iframe"
+            srcDoc={htmlOutput}
+            sandbox="allow-scripts"
+          />
+        );
+      }
+      
+      // Version History Component
+      function VersionHistory({ versions, onRestore }) {
+        return (
+          <div>
+            {versions.map((version, i) => (
+              <div key={i} className="version-item">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div>v{version.version} - {new Date(version.timestamp).toLocaleString()}</div>
+                    <div style={{ color: '#a0aec0', fontSize: 11 }}>{version.description}</div>
+                  </div>
+                  <button 
+                    className="button"
+                    onClick={() => onRestore(version)}
+                    style={{ padding: '4px 8px', fontSize: 12 }}
+                  >
+                    Restore
+                  </button>
+                </div>
+              </div>
+            ))}
+            {versions.length === 0 && (
+              <div style={{ color: '#a0aec0', textAlign: 'center' }}>No versions saved yet</div>
+            )}
+          </div>
+        );
+      }
+      
+      // Main IDE Application
+      function IDEApp() {
+        const [files, setFiles] = useState([
+          { name: 'app.js', content: '// Welcome to iCoder Plus!\nconsole.log("Hello, AI IDE!");', language: 'javascript' },
+          { name: 'index.html', content: '<h1>Hello World</h1>\n<p>Edit me!</p>', language: 'html' }
+        ]);
+        const [activeFile, setActiveFile] = useState(files[0]);
+        const [bottomSheetTab, setBottomSheetTab] = useState('preview');
+        const [collapsed, setCollapsed] = useState(false);
+        const [backendStatus, setBackendStatus] = useState('checking');
+        const [versions, setVersions] = useState([]);
+        
+        // Check backend status
+        useEffect(() => {
+          fetch(`${window.API_BASE}/health`)
+            .then(res => res.json())
+            .then(() => setBackendStatus('connected'))
+            .catch(() => setBackendStatus('error'));
+        }, []);
+        
+        const handleFileSelect = (file) => {
+          setActiveFile(file);
+        };
+        
+        const handleFileUpload = (name, content) => {
+          const newFile = { 
+            name, 
+            content, 
+            language: name.endsWith('.js') ? 'javascript' : name.endsWith('.html') ? 'html' : 'plaintext'
+          };
+          setFiles(prev => [...prev, newFile]);
+          setActiveFile(newFile);
+        };
+        
+        const handleCodeChange = (newCode) => {
+          setActiveFile(prev => ({ ...prev, content: newCode }));
+          setFiles(prev => prev.map(f => 
+            f.name === activeFile.name ? { ...f, content: newCode } : f
+          ));
+        };
+        
+        const saveVersion = () => {
+          const version = {
+            version: versions.length + 1,
+            timestamp: new Date().toISOString(),
+            description: `Updated ${activeFile.name}`,
+            file: activeFile.name,
+            content: activeFile.content
+          };
+          setVersions(prev => [version, ...prev]);
+        };
+        
+        const restoreVersion = (version) => {
+          const file = files.find(f => f.name === version.file);
+          if (file) {
+            const restored = { ...file, content: version.content };
+            setActiveFile(restored);
+            setFiles(prev => prev.map(f => 
+              f.name === version.file ? restored : f
+            ));
+          }
+        };
+        
+        const analyzeCode = async () => {
+          try {
+            const response = await fetch(`${window.API_BASE}/api/ai/analyze`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                code: activeFile.content,
+                fileName: activeFile.name,
+                analysisType: 'review'
+              })
+            });
+            const data = await response.json();
+            alert('AI Analysis:\n' + JSON.stringify(data.data || data, null, 2));
+          } catch (error) {
+            alert('Error analyzing code: ' + error.message);
+          }
+        };
+        
+        return (
+          <div className="ide-container">
+            {/* Sidebar */}
+            <div className="sidebar">
+              <div className="sidebar-header">
+                <h3>iCoder Plus IDE</h3>
+                <div style={{ display: 'flex', alignItems: 'center', marginTop: 8 }}>
+                  <div className={`status-dot status-${backendStatus}`}></div>
+                  <span style={{ fontSize: 12, color: '#a0aec0' }}>
+                    Backend {backendStatus}
+                  </span>
+                </div>
+              </div>
+              <div className="sidebar-content">
+                <FileManager 
+                  files={files}
+                  activeFile={activeFile}
+                  onFileSelect={handleFileSelect}
+                  onFileUpload={handleFileUpload}
+                />
               </div>
             </div>
-            <div className="card">
-              <div className="status">
-                <div className={`dot ${health?.ok ? 'green' : 'red'}`}></div>
-                <strong>Backend: {health?.ok ? 'Connected' : 'Error'}</strong>
+            
+            {/* Main Editor Area */}
+            <div className="main-area">
+              <div className="editor-container">
+                {/* Monaco Editor */}
+                {typeof monaco !== 'undefined' ? (
+                  <CodeEditor 
+                    value={activeFile.content}
+                    onChange={handleCodeChange}
+                    language={activeFile.language}
+                  />
+                ) : (
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    height: '100%',
+                    color: '#a0aec0'
+                  }}>
+                    Loading Monaco Editor...
+                  </div>
+                )}
+                
+                {/* Editor Actions */}
+                <div style={{ 
+                  position: 'absolute', 
+                  top: 16, 
+                  right: 16, 
+                  display: 'flex', 
+                  gap: 8 
+                }}>
+                  <button className="button" onClick={saveVersion}>
+                    Save Version
+                  </button>
+                  <button className="button" onClick={analyzeCode}>
+                    AI Analyze
+                  </button>
+                </div>
               </div>
-              <div className="code">
-                {health ? JSON.stringify(health.data, null, 2) : 'Loading...'}
+              
+              {/* Bottom Sheet */}
+              <div className={`bottom-sheet ${collapsed ? 'collapsed' : ''}`}>
+                <button 
+                  className="collapse-btn"
+                  onClick={() => setCollapsed(!collapsed)}
+                >
+                  {collapsed ? '↑' : '↓'}
+                </button>
+                
+                {!collapsed && (
+                  <>
+                    {/* Bottom Sheet Tabs */}
+                    <div className="bottom-tabs">
+                      {['preview', 'ai-chat', 'history'].map(tab => (
+                        <button 
+                          key={tab}
+                          className={`tab-button ${bottomSheetTab === tab ? 'active' : ''}`}
+                          onClick={() => setBottomSheetTab(tab)}
+                        >
+                          {tab === 'preview' && '▶ Live Preview'}
+                          {tab === 'ai-chat' && '🤖 AI Chat'}
+                          {tab === 'history' && '📝 History'}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Tab Content */}
+                    <div className="tab-content">
+                      {bottomSheetTab === 'preview' && (
+                        <LivePreview code={activeFile.content} />
+                      )}
+                      {bottomSheetTab === 'ai-chat' && (
+                        <AIChat />
+                      )}
+                      {bottomSheetTab === 'history' && (
+                        <VersionHistory 
+                          versions={versions}
+                          onRestore={restoreVersion}
+                        />
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
         );
       }
       
-      ReactDOM.render(React.createElement(App), document.getElementById('root'));
+      // Initialize Monaco Editor and render app
+      if (typeof require !== 'undefined') {
+        require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.44.0/min/vs' } });
+        require(['vs/editor/editor.main'], function () {
+          ReactDOM.render(React.createElement(IDEApp), document.getElementById('root'));
+        });
+      } else {
+        // Fallback without Monaco
+        ReactDOM.render(React.createElement(IDEApp), document.getElementById('root'));
+      }
     </script>
   </body>
 </html>

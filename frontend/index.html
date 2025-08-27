@@ -7,8 +7,13 @@
   <title>iCoder Plus — AI-first IDE v2.0</title>
 
   <!-- React 18 (UMD) + Babel для JSX в одном файле -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+  <!-- <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script> -->
+
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <!-- TypeScript в браузере (для быстрого транспайла TS→JS) -->
@@ -315,9 +320,9 @@
 
     // HTML-обёртка для предпросмотра с автоподключением CSS/JS
     // Удалил эту функцию Перемещаем её в App
-    
+
     function App() {
-      
+
       const [backendOk, setBackendOk] = useState(false);
       const [files, setFiles] = useState([
         { name: 'index.html', language: 'html', content: '<h1>Hello iCoder 🚀</h1><p>Tap RUN to render.</p>' },
@@ -339,102 +344,102 @@
       const [chat, setChat] = useState([]);
 
       const buildHtmlForPreview = ({ language, code }) => {
-      // теперь files доступна
-      // Билдим карту Blob URL для всех файлов проекта
-      const makeBlobURL = (content, type) => URL.createObjectURL(new Blob([content], { type }));
-      const urlMap = new Map();
-      const byExt = (name) => (name.split('.').pop() || '').toLowerCase();
+        // теперь files доступна
+        // Билдим карту Blob URL для всех файлов проекта
+        const makeBlobURL = (content, type) => URL.createObjectURL(new Blob([content], { type }));
+        const urlMap = new Map();
+        const byExt = (name) => (name.split('.').pop() || '').toLowerCase();
 
-      // Генерим URL-ы на все файлы для подключения относительными путями
-      files.forEach(f => {
-        const ext = byExt(f.name);
-        let mime = 'text/plain';
-        if (ext === 'js' || ext === 'mjs' || ext === 'cjs') mime = 'text/javascript';
-        else if (ext === 'css') mime = 'text/css';
-        else if (ext === 'html' || ext === 'htm') mime = 'text/html';
-        else if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico'].includes(ext)) mime = 'image/' + (ext === 'svg' ? 'svg+xml' : ext);
-        urlMap.set(f.name, makeBlobURL(f.content, mime));
-      });
-
-      // Ветка HTML — автоподключение CSS/JS
-      if (language === 'html') {
-        let html = code;
-
-        // Подмена src/href на blob-URL, если файл существует в проекте
-        html = html.replace(/(src|href)\s*=\s*["']([^"']+)["']/g, (m, attr, ref) => {
-          if (/^(https?:)?\/\//i.test(ref)) return m;
-          const key = files.find(f => f.name.endsWith(ref))?.name;
-          if (key && urlMap.get(key)) return attr + '="' + urlMap.get(key) + '"';
-          return m;
+        // Генерим URL-ы на все файлы для подключения относительными путями
+        files.forEach(f => {
+          const ext = byExt(f.name);
+          let mime = 'text/plain';
+          if (ext === 'js' || ext === 'mjs' || ext === 'cjs') mime = 'text/javascript';
+          else if (ext === 'css') mime = 'text/css';
+          else if (ext === 'html' || ext === 'htm') mime = 'text/html';
+          else if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico'].includes(ext)) mime = 'image/' + (ext === 'svg' ? 'svg+xml' : ext);
+          urlMap.set(f.name, makeBlobURL(f.content, mime));
         });
 
+        // Ветка HTML — автоподключение CSS/JS
+        if (language === 'html') {
+          let html = code;
 
-        // Автоинжект CSS/JS если нет явных подключений
-        const hasScript = /<script\b/i.test(html);
-        const hasStyle = /<link\b|<style\b/i.test(html);
-
-        let inject = '';
-        if (!hasStyle) {
-          const cssList = files.filter(f => f.language === 'css');
-          cssList.forEach(f => {
-            const url = urlMap.get(f.name);
-            if (url) inject += '<link rel="stylesheet" href="' + url + '">\n';
+          // Подмена src/href на blob-URL, если файл существует в проекте
+          html = html.replace(/(src|href)\s*=\s*["']([^"']+)["']/g, (m, attr, ref) => {
+            if (/^(https?:)?\/\//i.test(ref)) return m;
+            const key = files.find(f => f.name.endsWith(ref))?.name;
+            if (key && urlMap.get(key)) return attr + '="' + urlMap.get(key) + '"';
+            return m;
           });
+
+
+          // Автоинжект CSS/JS если нет явных подключений
+          const hasScript = /<script\b/i.test(html);
+          const hasStyle = /<link\b|<style\b/i.test(html);
+
+          let inject = '';
+          if (!hasStyle) {
+            const cssList = files.filter(f => f.language === 'css');
+            cssList.forEach(f => {
+              const url = urlMap.get(f.name);
+              if (url) inject += '<link rel="stylesheet" href="' + url + '">\n';
+            });
+          }
+          if (!hasScript) {
+            const jsList = files.filter(f => f.language === 'javascript');
+            jsList.forEach(f => {
+              const url = urlMap.get(f.name);
+              if (url) inject += '<script src="' + url + '"><\/script>\n';
+            });
+          }
+
+
+          if (inject) {
+            if (/<\/head>/i.test(html)) html = html.replace(/<\/head>/i, inject + '\n</head>');
+            else html = inject + '\n' + html;
+          }
+
+          return html.trim().toLowerCase().includes('<!doctype')
+            ? html
+            : '<!doctype html><html><head><meta charset="utf-8"><title>Preview</title></head><body>' + html + '</body></html>';
         }
-        if (!hasScript) {
-          const jsList = files.filter(f => f.language === 'javascript');
-          jsList.forEach(f => {
-            const url = urlMap.get(f.name);
-            if (url) inject += '<script src="' + url + '"><\/script>\n';
-          });
+
+        // Ветка JS/TS
+        let js = code;
+        if (language === 'typescript') {
+          try {
+            js = window.ts.transpileModule(code, { compilerOptions: { target: 'ES2020', module: 'None' } }).outputText;
+          } catch (e) {
+            js = 'console.error(' + JSON.stringify(String(e)) + ');';
+          }
         }
 
+        const htmlTemplate = '<!doctype html><html><head><meta charset="utf-8"><title>Preview</title>' +
+          '<style>html,body{background:#0b1020;color:#d8e1f0;font-family:ui-monospace,monospace;margin:0}' +
+          '#out{white-space:pre-wrap;padding:10px;border-top:1px solid #24304f}</style>' +
+          '</head><body>' +
+          '<div id="app"></div>' +
+          '<pre id="out"></pre>' +
+          '<script>' +
+          '(function(){' +
+          '  const out = document.getElementById(\'out\');' +
+          '  const orig = console.log;' +
+          '  console.log = function(){ orig.apply(console, arguments);' +
+          '    out.textContent += Array.from(arguments).map(a => typeof a===\'object\'? JSON.stringify(a): String(a)).join(\' \') + "\\n";' +
+          '  };' +
+          '})();' +
+          '<\/script>' +
+          '<script>' +
+          'try {' +
+          js +
+          '} catch (e) {' +
+          '  console.log(\'❌ Error:\', e && e.message ? e.message : String(e));' +
+          '}' +
+          '<\/script>' +
+          '</body></html>';
 
-        if (inject) {
-          if (/<\/head>/i.test(html)) html = html.replace(/<\/head>/i, inject + '\n</head>');
-          else html = inject + '\n' + html;
-        }
-
-        return html.trim().toLowerCase().includes('<!doctype')
-          ? html
-          : '<!doctype html><html><head><meta charset="utf-8"><title>Preview</title></head><body>' + html + '</body></html>';
-      }
-
-      // Ветка JS/TS
-      let js = code;
-      if (language === 'typescript') {
-        try {
-          js = window.ts.transpileModule(code, { compilerOptions: { target: 'ES2020', module: 'None' } }).outputText;
-        } catch (e) {
-          js = 'console.error(' + JSON.stringify(String(e)) + ');';
-        }
-      }
-
-      const htmlTemplate = '<!doctype html><html><head><meta charset="utf-8"><title>Preview</title>' +
-        '<style>html,body{background:#0b1020;color:#d8e1f0;font-family:ui-monospace,monospace;margin:0}' +
-        '#out{white-space:pre-wrap;padding:10px;border-top:1px solid #24304f}</style>' +
-        '</head><body>' +
-        '<div id="app"></div>' +
-        '<pre id="out"></pre>' +
-        '<script>' +
-        '(function(){' +
-        '  const out = document.getElementById(\'out\');' +
-        '  const orig = console.log;' +
-        '  console.log = function(){ orig.apply(console, arguments);' +
-        '    out.textContent += Array.from(arguments).map(a => typeof a===\'object\'? JSON.stringify(a): String(a)).join(\' \') + "\\n";' +
-        '  };' +
-        '})();' +
-        '<\/script>' +
-        '<script>' +
-        'try {' +
-        js +
-        '} catch (e) {' +
-        '  console.log(\'❌ Error:\', e && e.message ? e.message : String(e));' +
-        '}' +
-        '<\/script>' +
-        '</body></html>';
-
-      return htmlTemplate;
+        return htmlTemplate;
       };
       // History (на уровне файла)
       const [versions, setVersions] = useState({}); // {filename: [{ts, content}]}
@@ -476,7 +481,9 @@
             }
           });
           if (autoRun) runPreview();
+          console.log("Monaco ready; doing initial preview");
         });
+
         return () => {
           disposed = true;
           if (editorRef.current) editorRef.current.dispose();
@@ -516,17 +523,37 @@
       };
 
       // RUN
+      // RUN
       const runPreview = () => {
-        const f = files[current];
-        const code = editorRef.current ? editorRef.current.getValue() : f.content;
-        const doc = buildHtmlForPreview({ language: f.language, code });
-        const iframe = iframeRef.current;
-        if (!iframe) return;
-        const blob = new Blob([doc], { type: 'text/html' });
-        iframe.src = URL.createObjectURL(blob);
-        // консоль iframe будет писать в свой <pre>, мы его дополнительно не читаем
-        setConsoleText(''); // можно чистить внешний лог
+        try {
+          console.log("▶ RUN clicked");
+          if (!files?.length) { console.warn("No files"); return; }
+
+          const f = files[current] ?? files[0];
+          const editor = editorRef.current;
+          const code = editor ? editor.getValue() : f.content;
+
+          console.log("Current file:", f?.name, "lang:", f?.language, "editorReady:", Boolean(editor));
+
+          const doc = buildHtmlForPreview({ language: f.language, code });
+          if (!doc || typeof doc !== 'string') {
+            console.error("buildHtmlForPreview returned empty/invalid doc");
+            return;
+          }
+
+          const iframe = iframeRef.current;
+          if (!iframe) { console.error("No iframeRef"); return; }
+
+          const blob = new Blob([doc], { type: 'text/html' });
+          iframe.src = URL.createObjectURL(blob);
+
+          // (внешнюю консоль очищаем — сам preview пишет в свой <pre id="out">)
+          setConsoleText('');
+        } catch (e) {
+          console.error("RUN failed:", e);
+        }
       };
+
 
       // загрузка папки
       const onUploadFolder = async (ev) => {
@@ -735,7 +762,11 @@
                   <option value="css">CSS</option>
                   <option value="json">JSON</option>
                 </select>
-                <button className="primary" onClick={runPreview}>▶ RUN</button>
+                <button className="primary" onClick={() => {
+                  console.log("Button clicked!");
+                  runPreview();
+                }}>▶ RUN</button>
+
                 <label className="chk" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                   <input type="checkbox" checked={autoRun} onChange={(e) => setAutoRun(e.target.checked)} />
                   Auto Run
@@ -811,6 +842,15 @@
         </div>
       );
     }
+
+    // Глобальная диагностика
+    window.addEventListener('error', (e) => {
+      console.error('window.onerror:', e?.error || e?.message || e);
+    });
+    window.addEventListener('unhandledrejection', (e) => {
+      console.error('unhandledrejection:', e?.reason || e);
+    });
+
 
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>

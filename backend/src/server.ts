@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -27,7 +27,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health check endpoint
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', (req: any, res: any) => {
   res.status(200).json({
     status: 'OK',
     message: 'iCoder Plus Backend is healthy',
@@ -39,7 +39,7 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // Root endpoint
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (req: any, res: any) => {
   res.status(200).json({
     message: 'iCoder Plus Backend API',
     version: '2.0.0',
@@ -52,7 +52,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 // API endpoint for AI analysis (placeholder)
-app.post('/api/ai/analyze', (req: Request, res: Response) => {
+app.post('/api/ai/analyze', (req: any, res: any) => {
   const { code, analysisType } = req.body;
   
   if (!code) {
@@ -76,7 +76,7 @@ app.post('/api/ai/analyze', (req: Request, res: Response) => {
 });
 
 // Catch all other routes
-app.all('*', (req: Request, res: Response) => {
+app.all('*', (req: any, res: any) => {
   res.status(404).json({
     error: 'Route not found',
     message: `Route ${req.method} ${req.path} does not exist`,
@@ -85,7 +85,7 @@ app.all('*', (req: Request, res: Response) => {
 });
 
 // Error handler
-app.use((err: any, req: Request, res: Response, next: any) => {
+app.use((err: any, req: any, res: any, next: any) => {
   console.error('Server error:', err);
   res.status(500).json({
     error: 'Internal server error',

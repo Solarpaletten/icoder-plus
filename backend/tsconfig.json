@@ -17,19 +17,13 @@
     "declaration": false,
     "outDir": "./dist",
     "rootDir": "./src",
-    "baseUrl": "./",
-    "paths": {
-      "@/*": ["src/*"]
-    },
-    "types": ["node"]
+    "baseUrl": "./"
   },
   "include": [
     "src/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "**/*.test.ts",
-    "**/*.spec.ts"
+    "dist"
   ]
 }

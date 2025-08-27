@@ -139,19 +139,28 @@ function buildHtmlForPreview({ language, code }) {
       return m;
     });
 
+    
     // Автоинжект CSS/JS если нет явных подключений
     const hasScript = /<script\b/i.test(html);
-    const hasStyle  = /<link\b|<style\b/i.test(html);
+        const hasStyle = /<link\b|<style\b/i.test(html);
 
-    let inject = '';
-    if (!hasStyle) {
-      const cssList = files.filter(f => f.language==='css');
-      inject += cssList.map(f => '<link rel="stylesheet" href="' + urlMap.get(f.name) + '">').join('\n');
+        let inject = '';
+        if (!hasStyle) {
+          const cssList = files.filter(f => f.language === 'css');
+          cssList.forEach(f => {
+            const url = urlMap.get(f.name);
+            if (url) inject += '<link rel="stylesheet" href="' + url + '">\n';
+          });
+        }
+        if (!hasScript) {
+          const jsList = files.filter(f => f.language === 'javascript');
+          jsList.forEach(f => {
+            const url = urlMap.get(f.name);
+            if (url) inject += '<script src="' + url + '"><\/script>\n';
+          });
+        }
     }
-    if (!hasScript) {
-      const jsList = files.filter(f => f.language==='javascript');
-      inject += jsList.map(f => '<script src="' + urlMap.get(f.name) + '"></script>').join('\n');
-    }
+    
 
     if (inject) {
       if (/<\/head>/i.test(html)) html = html.replace(/<\/head>/i, inject + '\n</head>');

@@ -13,9 +13,6 @@
 <!-- TypeScript в браузере (для быстрого транспайла TS→JS) -->
 <script src="https://unpkg.com/typescript@5.4.5/lib/typescript.js"></script>
 
-<!-- JSZip для экспорта/импорта проектов -->
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-
 <!-- Monaco Editor через CDN -->
 <script>window.require = undefined;</script>
 <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
@@ -104,66 +101,18 @@ const extToLang = (name) => {
   const ext = (name.split('.').pop()||'').toLowerCase();
   if (ext === 'ts' || ext === 'tsx') return 'typescript';
   if (ext === 'json') return 'json';
-  if (ext === 'css') return 'css';
   if (ext === 'html' || ext === 'htm') return 'html';
   return 'javascript';
 };
 
-// HTML-обёртка для предпросмотра с автоподключением CSS/JS
+  // HTML-обёртка для предпросмотра
 function buildHtmlForPreview({ language, code }) {
-  // Билдим карту Blob URL для всех файлов проекта
-  const makeBlobURL = (content, type) => URL.createObjectURL(new Blob([content], { type }));
-  const urlMap = new Map();
-  const byExt = (name)=> (name.split('.').pop()||'').toLowerCase();
-
-  // Генерим URL-ы на все файлы для подключения относительными путями
-  files.forEach(f => {
-    const ext = byExt(f.name);
-    let mime = 'text/plain';
-    if (ext==='js' || ext==='mjs' || ext==='cjs') mime = 'text/javascript';
-    else if (ext==='css') mime = 'text/css';
-    else if (ext==='html' || ext==='htm') mime = 'text/html';
-    else if (['png','jpg','jpeg','gif','svg','webp','ico'].includes(ext)) mime = 'image/' + (ext==='svg'?'svg+xml':ext);
-    urlMap.set(f.name, makeBlobURL(f.content, mime));
-  });
-
-  // Ветка HTML — автоподключение CSS/JS
   if (language === 'html') {
-    let html = code;
-
-    // Подмена src/href на blob-URL, если файл существует в проекте
-    html = html.replace(/(src|href)\s*=\s*["']([^"']+)["']/g, (m,attr,ref)=>{
-      if (/^(https?:)?\/\//i.test(ref)) return m;
-      const key = files.find(f => f.name.endsWith(ref))?.name;
-      if (key && urlMap.get(key)) return attr + '="' + urlMap.get(key) + '"';
-      return m;
-    });
-
-    // Автоинжект CSS/JS если нет явных подключений
-    const hasScript = /<script\b/i.test(html);
-    const hasStyle  = /<link\b|<style\b/i.test(html);
-
-    let inject = '';
-    if (!hasStyle) {
-      const cssList = files.filter(f => f.language==='css');
-      inject += cssList.map(f => '<link rel="stylesheet" href="' + urlMap.get(f.name) + '">').join('\n');
-    }
-    if (!hasScript) {
-      const jsList = files.filter(f => f.language==='javascript');
-      inject += jsList.map(f => '<script src="' + urlMap.get(f.name) + '"></script>').join('\n');
-    }
-
-    if (inject) {
-      if (/<\/head>/i.test(html)) html = html.replace(/<\/head>/i, inject + '\n</head>');
-      else html = inject + '\n' + html;
-    }
-
-    return html.trim().toLowerCase().includes('<!doctype')
-      ? html
-      : '<!doctype html><html><head><meta charset="utf-8"><title>Preview</title></head><body>' + html + '</body></html>';
+    // если в коде уже есть <!doctype ...> — отдадим как есть
+    return code.trim().toLowerCase().includes('<!doctype') ? code : 
+      '<!doctype html><html><head><meta charset="utf-8"><title>Preview</title></head><body>' + code + '</body></html>';
   }
 
-  // Ветка JS/TS
   let js = code;
   if (language === 'typescript') {
     try {
@@ -173,6 +122,7 @@ function buildHtmlForPreview({ language, code }) {
     }
   }
 
+  // Консоль внутри iframe - избегаем template literals
   const htmlTemplate = '<!doctype html><html><head><meta charset="utf-8"><title>Preview</title>' +
     '<style>html,body{background:#0b1020;color:#d8e1f0;font-family:ui-monospace,monospace;margin:0}' +
     '#out{white-space:pre-wrap;padding:10px;border-top:1px solid #24304f}</style>' +
@@ -313,83 +263,17 @@ function App(){
     setConsoleText(''); // можно чистить внешний лог
   };
 
-  // загрузка папки
-  const onUploadFolder = async (ev) => {
+  // загрузка локальных файлов
+  const onUpload = async (ev) => {
     const list = Array.from(ev.target.files || []);
     if (!list.length) return;
     for (const file of list) {
       const content = await file.text();
       const language = extToLang(file.name);
-      files.push({ name: file.webkitRelativePath || file.name, content, language });
+      files.push({ name: file.name, content, language });
     }
     setFiles([...files]);
-    openFile(files.findIndex(f=>/index\.html$/i.test(f.name)) || files.length-1);
-    ev.target.value = '';
-  };
-
-  // drag&drop файлов/папок
-  const onDropFiles = async (ev) => {
-    ev.preventDefault();
-    const items = ev.dataTransfer.items;
-    if (!items) return;
-
-    const entries = [];
-    for (const it of items) {
-      const entry = it.webkitGetAsEntry && it.webkitGetAsEntry();
-      if (entry) entries.push(entry);
-    }
-    const readEntry = async (entry, path='') => {
-      if (entry.isFile) {
-        await new Promise((res,rej)=>{
-          entry.file(async (file)=>{
-            const content = await file.text();
-            const name = path ? `${path}/${file.name}` : file.name;
-            files.push({ name, content, language: extToLang(name) });
-            res();
-          }, rej);
-        });
-      } else if (entry.isDirectory) {
-        const reader = entry.createReader();
-        await new Promise((res,rej)=>{
-          reader.readEntries(async (ents)=>{
-            for (const e of ents) await readEntry(e, path ? `${path}/${entry.name}` : entry.name);
-            res();
-          }, rej);
-        });
-      }
-    };
-    for (const e of entries) await readEntry(e);
-    setFiles([...files]);
-    openFile(files.findIndex(f=>/index\.html$/i.test(f.name)) || files.length-1);
-  };
-
-  // экспорт ZIP
-  const exportZip = async () => {
-    const zip = new JSZip();
-    files.forEach(f => zip.file(f.name, f.content));
-    const blob = await zip.generateAsync({type:'blob'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'project.zip';
-    a.click();
-  };
-
-  // импорт ZIP
-  const onImportZip = async (ev) => {
-    const file = ev.target.files?.[0];
-    if (!file) return;
-    const zip = await JSZip.loadAsync(file);
-    const newFiles = [];
-    await Promise.all(Object.keys(zip.files).map(async (p)=>{
-      const zf = zip.files[p];
-      if (zf.dir) return;
-      const content = await zf.async('string');
-      newFiles.push({ name: p, content, language: extToLang(p) });
-    }));
-    newFiles.sort((a,b)=>a.name.localeCompare(b.name));
-    setFiles([...files, ...newFiles]);
-    const idx = [...files, ...newFiles].findIndex(f=>/index\.html$/i.test(f.name));
-    openFile(idx >= 0 ? idx : files.length - 1);
+    openFile(files.length - 1);
     ev.target.value = '';
   };
 
@@ -475,19 +359,7 @@ function App(){
         {/* LEFT: files */}
         <div className="panel left">
           <div className="files-title">Files</div>
-          
-          <div style={{display:'grid', gap:'8px', margin:'8px 0 12px'}}>
-            <input className="upload" type="file" multiple onChange={onUpload}/>
-            <input type="file" webkitdirectory="true" directory="true" onChange={onUploadFolder}/>
-            <input type="file" accept=".zip" onChange={onImportZip}/>
-            <div
-              onDragOver={(e)=>{e.preventDefault();}}
-              onDrop={onDropFiles}
-              style={{padding:'10px', border:'1px dashed var(--border)', borderRadius:'8px', color:'var(--muted)'}}
-            >Drag & Drop files/folders here</div>
-            <button onClick={exportZip}>⬇ Export ZIP</button>
-          </div>
-
+          <input className="upload" type="file" multiple onChange={onUpload}/>
           {files.map((fi, idx) => (
             <div key={idx} className={`file-item ${idx===current?'active':''}`} onClick={()=>openFile(idx)}>
               <div>{fi.name}</div>
@@ -503,7 +375,6 @@ function App(){
               <option value="javascript">JavaScript</option>
               <option value="typescript">TypeScript</option>
               <option value="html">HTML</option>
-              <option value="css">CSS</option>
               <option value="json">JSON</option>
             </select>
             <button className="primary" onClick={runPreview}>▶ RUN</button>

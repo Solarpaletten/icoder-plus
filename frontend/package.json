@@ -2,7 +2,7 @@
   "name": "icoder-plus-frontend-static",
   "version": "2.0.0",
   "scripts": {
-    "build": "echo 'Static build complete'",
+    "build": "mkdir -p dist && cp index.html dist/ && echo 'Static build complete'",
     "start": "echo 'Static site ready'"
   },
   "engines": {

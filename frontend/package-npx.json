@@ -1,0 +1,27 @@
+{
+  "name": "icoder-plus-frontend",
+  "version": "2.0.0",
+  "type": "module",
+  "description": "iCoder Plus Frontend - AI-first IDE UI",
+  "scripts": {
+    "dev": "npx vite",
+    "build": "npx vite build",
+    "preview": "npx vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "axios": "^1.6.2",
+    "clsx": "^2.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.1.1",
+    "tailwindcss": "^3.4.17",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "vite": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

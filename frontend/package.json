@@ -1,13 +1,16 @@
 {
-  "name": "icoder-plus-frontend-simple",
+  "name": "icoder-plus-frontend-static",
   "version": "2.0.0",
-  "description": "iCoder Plus Frontend - Simple HTML version",
+  "description": "iCoder Plus Frontend - Static HTML version",
   "scripts": {
-    "build": "mkdir -p dist && cp -r src/* dist/ && echo 'Simple build complete'",
-    "start": "echo 'Static site ready'",
-    "dev": "echo 'Development server not needed for static site'"
+    "build": "echo 'Static site ready - no build needed' && mkdir -p dist && cp index.html dist/",
+    "start": "echo 'Static site deployed'",
+    "dev": "echo 'Open index.html in browser'"
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "keywords": ["static", "html", "ide", "ai", "render"],
+  "author": "Solar IT Team",
+  "license": "MIT"
 }

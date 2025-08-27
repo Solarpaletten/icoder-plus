@@ -129,3 +129,5 @@ MIT License. Free to use, modify, and distribute.
 new structura
 
 backend/package.json
+
+3-1 file v2.1: Folder upload, D&D, CSS support, ZIP import/export

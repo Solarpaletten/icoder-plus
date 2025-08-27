@@ -1,16 +1,16 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import morgan from 'morgan';
 import compression from 'compression';
 import dotenv from 'dotenv';
 
+// Загрузить переменные окружения
 dotenv.config();
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '3000', 10);
+const PORT = parseInt(process.env.PORT || '10000', 10);
 
-// Middleware
+// Базовые middleware
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
   contentSecurityPolicy: false
@@ -19,23 +19,18 @@ app.use(helmet({
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: false
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Только для development логирование
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('combined'));
-}
-
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({
     status: 'OK',
+    message: 'iCoder Plus Backend is healthy',
     timestamp: new Date().toISOString(),
     version: '2.0.0',
     environment: process.env.NODE_ENV || 'production',
@@ -44,135 +39,81 @@ app.get('/health', (req, res) => {
 });
 
 // Root endpoint
-app.get('/', (req, res) => {
+app.get('/', (req: Request, res: Response) => {
   res.status(200).json({
-    message: 'iCoder Plus Backend is running!',
+    message: 'iCoder Plus Backend API',
     version: '2.0.0',
+    status: 'running',
     endpoints: {
       health: '/health',
-      ai: {
-        analyze: '/api/ai/analyze',
-        chat: '/api/ai/chat', 
-        fix: '/api/ai/fix'
-      }
+      docs: 'https://github.com/Solarpaletten/icoder-plus'
     }
   });
 });
 
-// Basic AI endpoints with fallback responses
-app.post('/api/ai/analyze', (req, res) => {
-  const { code, fileName, analysisType } = req.body;
+// API endpoint for AI analysis (placeholder)
+app.post('/api/ai/analyze', (req: Request, res: Response) => {
+  const { code, analysisType } = req.body;
   
-  res.status(200).json({
-    success: true,
-    analysis: {
-      fileName: fileName || 'unknown.js',
-      type: analysisType || 'review',
-      issues: [
-        {
-          line: 1,
-          type: 'suggestion',
-          message: 'Consider using const instead of var for better scoping'
-        }
-      ],
-      suggestions: [
-        'Add error handling for better reliability',
-        'Consider adding type annotations',
-        'Use meaningful variable names'
-      ],
-      metrics: {
-        complexity: 'low',
-        maintainability: 'good',
-        performance: 'acceptable'
-      },
-      score: 85
-    },
-    timestamp: new Date().toISOString()
-  });
-});
-
-app.post('/api/ai/chat', (req, res) => {
-  const { message, code, fileName } = req.body;
-  
-  res.status(200).json({
-    success: true,
-    response: `Based on your question "${message}" about ${fileName || 'your code'}, here are some suggestions: Consider improving error handling, adding comments for clarity, and following consistent naming conventions.`,
-    suggestions: [
-      'Add JSDoc comments',
-      'Implement proper error boundaries',
-      'Consider performance optimization'
-    ],
-    timestamp: new Date().toISOString()
-  });
-});
-
-app.post('/api/ai/fix', (req, res) => {
-  const { code, fileName } = req.body;
-  
-  // Simple fixes - replace var with const, add semicolons
-  let fixedCode = code;
-  if (typeof code === 'string') {
-    fixedCode = code
-      .replace(/var\s+/g, 'const ')
-      .replace(/(?<!;)\n/g, ';\n')
-      .trim();
+  if (!code) {
+    return res.status(400).json({
+      error: 'Code is required',
+      message: 'Please provide code to analyze'
+    });
   }
-  
+
+  // Placeholder response
   res.status(200).json({
     success: true,
-    fixedCode: fixedCode,
-    changes: [
-      'Replaced var declarations with const',
-      'Added missing semicolons',
-      'Improved code formatting'
-    ],
-    original: code,
-    timestamp: new Date().toISOString()
+    message: 'AI analysis endpoint is working',
+    data: {
+      originalCode: code,
+      analysisType: analysisType || 'basic',
+      result: 'AI analysis will be implemented soon',
+      timestamp: new Date().toISOString()
+    }
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
+// Catch all other routes
+app.all('*', (req: Request, res: Response) => {
   res.status(404).json({
-    error: 'Not Found',
-    message: `Route ${req.originalUrl} not found`,
-    availableRoutes: ['/health', '/api/ai/analyze', '/api/ai/chat', '/api/ai/fix']
+    error: 'Route not found',
+    message: `Route ${req.method} ${req.path} does not exist`,
+    availableRoutes: ['GET /', 'GET /health', 'POST /api/ai/analyze']
   });
 });
 
-// Global error handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Global error:', err);
+// Error handler
+app.use((err: any, req: Request, res: Response, next: any) => {
+  console.error('Server error:', err);
   res.status(500).json({
-    success: false,
-    error: 'Internal Server Error',
+    error: 'Internal server error',
     message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
   });
 });
 
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 iCoder Plus Backend running on port ${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || 'production'}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-  console.log(`🌐 API endpoints available at /api/ai/*`);
+  console.log('🚀 iCoder Plus Backend started successfully');
+  console.log(`📡 Server running on port ${PORT}`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'production'}`);
+  console.log(`💚 Health check: http://localhost:${PORT}/health`);
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
+  console.log('🛑 SIGTERM received, shutting down gracefully');
   server.close(() => {
-    console.log('Process terminated');
+    console.log('✅ Process terminated');
     process.exit(0);
   });
 });
 
 process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully'); 
+  console.log('🛑 SIGINT received, shutting down gracefully');
   server.close(() => {
-    console.log('Process terminated');
+    console.log('✅ Process terminated');
     process.exit(0);
   });
 });
-
-export default app;

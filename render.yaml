@@ -1,12 +1,16 @@
 services:
   - type: web
-    name: icoder-plus-backend
-    runtime: node
-    rootDir: backend
-    buildCommand: npm install
-    startCommand: npm run start
+    name: icoder-plus-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
+      - key: VITE_API_URL
+        value: https://icoder-plus.onrender.com
+      - key: VITE_APP_NAME
+        value: iCoder Plus
+      - key: VITE_APP_VERSION
+        value: 2.0.0

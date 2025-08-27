@@ -2,23 +2,22 @@
   "name": "icoder-plus-frontend",
   "version": "2.0.0",
   "type": "module",
-  "description": "iCoder Plus Frontend - AI-first IDE UI in React",
+  "description": "iCoder Plus Frontend - AI-first IDE UI",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "lint:fix": "eslint . --ext js,jsx --fix"
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@monaco-editor/react": "^4.6.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "axios": "^1.6.2",
     "clsx": "^2.0.0",
-    "diff2html": "^3.4.48",
     "lucide-react": "^0.294.0",
+    "@monaco-editor/react": "^4.6.0",
     "monaco-editor": "^0.44.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "diff2html": "^3.4.48"
   },
   "devDependencies": {
     "@types/react": "^18.2.37",
@@ -31,24 +30,12 @@
     "eslint-plugin-react-refresh": "^0.4.4",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
-    "terser": "^5.43.1",
     "vite": "^5.0.0"
   },
-  "keywords": [
-    "react",
-    "vite",
-    "tailwind",
-    "ide",
-    "ai",
-    "code-editor",
-    "bottom-sheet",
-    "monaco-editor",
-    "vercel"
-  ],
-  "author": "Solar IT Team",
-  "license": "MIT",
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
-  }
+    "node": ">=18.0.0"
+  },
+  "keywords": ["react", "vite", "tailwind", "ide", "ai", "render"],
+  "author": "Solar IT Team",
+  "license": "MIT"
 }

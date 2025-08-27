@@ -7,16 +7,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        'midnight': '#0D1117',
-        'neon-blue': '#1F6FEB', 
-        'cyber-purple': '#9D4EDD',
-        'matrix-green': '#00FF9D',
-        'warning-yellow': '#FFD60A'
-      },
-      fontFamily: {
-        'poppins': ['Poppins', 'sans-serif'],
-        'jetbrains': ['JetBrains Mono', 'monospace'],
-        'mono': ['JetBrains Mono', 'Fira Code', 'monospace']
+        gray: {
+          50: '#f9fafb',
+          100: '#f3f4f6',
+          200: '#e5e7eb',
+          300: '#d1d5db',
+          400: '#9ca3af',
+          500: '#6b7280',
+          600: '#4b5563',
+          700: '#374151',
+          800: '#1f2937',
+          900: '#111827',
+        }
       }
     },
   },

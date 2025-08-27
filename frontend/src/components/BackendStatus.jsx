@@ -1,94 +1,108 @@
 import { useState, useEffect } from 'react'
-import { healthAPI, testConnection } from '../services/apiClient'
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://icoder-plus.onrender.com'
 
 export default function BackendStatus() {
   const [status, setStatus] = useState('checking')
-  const [backendInfo, setBackendInfo] = useState(null)
+  const [data, setData] = useState(null)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    checkBackendStatus()
+    checkBackend()
   }, [])
 
-  const checkBackendStatus = async () => {
+  const checkBackend = async () => {
     try {
       setStatus('checking')
       setError(null)
 
-      // Test basic connection
-      const isConnected = await testConnection()
+      const response = await fetch(`${API_URL}/health`)
       
-      if (!isConnected) {
-        setStatus('error')
-        setError('Cannot connect to backend')
-        return
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
       }
-
-      // Get health status
-      const healthData = await healthAPI.check()
-      setBackendInfo(healthData)
+      
+      const result = await response.json()
+      setData(result)
       setStatus('connected')
-
+      
     } catch (err) {
       setStatus('error')
       setError(err.message)
+      console.error('Backend check failed:', err)
     }
   }
 
-  const getStatusColor = () => {
+  const getStatusInfo = () => {
     switch (status) {
-      case 'checking': return 'text-yellow-500'
-      case 'connected': return 'text-green-500'
-      case 'error': return 'text-red-500'
-      default: return 'text-gray-500'
+      case 'checking': 
+        return { icon: '🔄', text: 'Checking...', color: 'text-yellow-400' }
+      case 'connected': 
+        return { icon: '✅', text: 'Backend Connected', color: 'text-green-400' }
+      case 'error': 
+        return { icon: '❌', text: 'Connection Error', color: 'text-red-400' }
+      default: 
+        return { icon: '❓', text: 'Unknown', color: 'text-gray-400' }
     }
   }
 
-  const getStatusText = () => {
-    switch (status) {
-      case 'checking': return 'Checking connection...'
-      case 'connected': return 'Backend connected ✅'
-      case 'error': return 'Backend error ❌'
-      default: return 'Unknown status'
-    }
-  }
+  const statusInfo = getStatusInfo()
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white">Backend Status</h3>
+    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold">Backend Status</h3>
         <button 
-          onClick={checkBackendStatus}
-          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+          onClick={checkBackend}
+          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+          disabled={status === 'checking'}
         >
-          Refresh
+          {status === 'checking' ? 'Checking...' : 'Refresh'}
         </button>
       </div>
-      
-      <div className={`mt-2 font-medium ${getStatusColor()}`}>
-        {getStatusText()}
+
+      <div className={`flex items-center space-x-2 mb-4 ${statusInfo.color}`}>
+        <span className="text-xl">{statusInfo.icon}</span>
+        <span className="font-medium">{statusInfo.text}</span>
       </div>
 
-      {backendInfo && (
-        <div className="mt-3 text-sm text-gray-300">
-          <p>• Version: {backendInfo.version}</p>
-          <p>• Environment: {backendInfo.environment}</p>
-          <p>• Port: {backendInfo.port}</p>
-          <p>• Tech: {backendInfo.tech}</p>
-          <p className="text-xs text-gray-400 mt-1">
-            {new Date(backendInfo.timestamp).toLocaleString()}
-          </p>
+      {data && (
+        <div className="space-y-2 text-sm">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span className="text-gray-400">Version:</span>
+              <span className="text-white ml-2">{data.version || 'Unknown'}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Environment:</span>
+              <span className="text-white ml-2">{data.environment || 'production'}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Status:</span>
+              <span className="text-white ml-2">{data.status || 'OK'}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Tech:</span>
+              <span className="text-white ml-2">{data.tech || 'JavaScript'}</span>
+            </div>
+          </div>
+          
+          <div className="pt-3 text-xs text-gray-500 border-t border-gray-700">
+            Last updated: {new Date().toLocaleTimeString()}
+          </div>
         </div>
       )}
 
       {error && (
-        <div className="mt-2 text-sm text-red-400 bg-red-900/20 p-2 rounded">
-          Error: {error}
+        <div className="mt-4 p-3 bg-red-900 bg-opacity-20 border border-red-800 rounded">
+          <div className="text-red-400 text-sm">
+            <strong>Error:</strong> {error}
+          </div>
         </div>
       )}
 
-      <div className="mt-3 text-xs text-gray-400">
-        Backend URL: {import.meta.env.VITE_API_URL || 'https://icoder-plus.onrender.com'}
+      <div className="mt-4 text-xs text-gray-500">
+        API URL: <span className="text-blue-400">{API_URL}</span>
       </div>
     </div>
   )

@@ -9,23 +9,12 @@ export default defineConfig({
       '@': resolve(__dirname, './src'),
       '@components': resolve(__dirname, './src/components'),
       '@services': resolve(__dirname, './src/services'),
-      '@utils': resolve(__dirname, './src/utils'),
-      '@hooks': resolve(__dirname, './src/hooks')
+      '@utils': resolve(__dirname, './src/utils')
     }
   },
   server: {
     port: 5173,
-    host: true,
-    open: true,
-    proxy: {
-      '/api': {
-        target: process.env.NODE_ENV === 'production' 
-          ? 'https://icoder-plus.onrender.com' 
-          : 'http://localhost:3000',
-        changeOrigin: true,
-        secure: false
-      }
-    }
+    host: true
   },
   build: {
     outDir: 'dist',
@@ -36,33 +25,12 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           editor: ['monaco-editor', '@monaco-editor/react'],
-          utils: ['diff2html', 'clsx', 'axios']
-        },
-        chunkFileNames: 'assets/[name]-[hash].js',
-        entryFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]'
-      }
-    },
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true
+          utils: ['axios', 'clsx']
+        }
       }
     }
   },
-  optimizeDeps: {
-    include: [
-      'react', 
-      'react-dom', 
-      'lucide-react', 
-      'axios',
-      'monaco-editor/esm/vs/language/typescript/ts.worker',
-      'monaco-editor/esm/vs/language/json/json.worker',
-      'monaco-editor/esm/vs/editor/editor.worker'
-    ]
-  },
   define: {
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '2.0.0'),
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV)
+    __APP_VERSION__: JSON.stringify('2.0.0')
   }
 })

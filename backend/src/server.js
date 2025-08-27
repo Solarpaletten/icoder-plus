@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 // Health endpoint
-app.get('/health', (req: any, res: any) => {
+app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
     message: 'iCoder Plus Backend is running',
@@ -19,7 +19,7 @@ app.get('/health', (req: any, res: any) => {
 });
 
 // Root endpoint  
-app.get('/', (req: any, res: any) => {
+app.get('/', (req, res) => {
   res.json({
     message: 'iCoder Plus Backend API',
     version: '2.0.0',
@@ -28,7 +28,7 @@ app.get('/', (req: any, res: any) => {
 });
 
 // AI endpoint placeholder
-app.post('/api/ai/analyze', (req: any, res: any) => {
+app.post('/api/ai/analyze', (req, res) => {
   const { code } = req.body;
   
   if (!code) {
@@ -49,5 +49,6 @@ app.post('/api/ai/analyze', (req: any, res: any) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌐 Health: http://localhost:${PORT}/health`);
 });

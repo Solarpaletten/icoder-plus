@@ -523,7 +523,6 @@
       };
 
       // RUN
-      // RUN
       const runPreview = () => {
         try {
           console.log("▶ RUN clicked");
@@ -541,11 +540,15 @@
             return;
           }
 
+          // Принудительное обновление iframe
           const iframe = iframeRef.current;
-          if (!iframe) { console.error("No iframeRef"); return; }
-
-          const blob = new Blob([doc], { type: 'text/html' });
-          iframe.src = URL.createObjectURL(blob);
+          if (iframe) {
+            iframe.src = 'about:blank'; // Очистка
+            setTimeout(() => {
+              const blob = new Blob([doc], { type: 'text/html' });
+              iframe.src = URL.createObjectURL(blob);
+            }, 10);
+          }
 
           // (внешнюю консоль очищаем — сам preview пишет в свой <pre id="out">)
           setConsoleText('');
@@ -807,7 +810,11 @@
           <div className="right-body">
             {tab === 'preview' && (
               <div className="preview-wrap">
-                <iframe ref={iframeRef} sandbox="allow-scripts allow-same-origin"></iframe>
+                <iframe
+                key={current}  
+                ref={iframeRef} 
+                sandbox="allow-scripts allow-same-origin"
+                ></iframe>
                 <div className="console">{consoleText || 'Console output appears here…'}</div>
               </div>
             )}

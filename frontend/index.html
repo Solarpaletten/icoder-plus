@@ -314,7 +314,32 @@
     };
 
     // HTML-обёртка для предпросмотра с автоподключением CSS/JS
-    function buildHtmlForPreview({ language, code }) {
+    // Удалил эту функцию Перемещаем её в App
+    
+    function App() {
+      
+      const [backendOk, setBackendOk] = useState(false);
+      const [files, setFiles] = useState([
+        { name: 'index.html', language: 'html', content: '<h1>Hello iCoder 🚀</h1><p>Tap RUN to render.</p>' },
+        { name: 'main.js', language: 'javascript', content: 'console.log("👋 Hello from JS!");' },
+      ]);
+      const [current, setCurrent] = useState(0);
+      const [lang, setLang] = useState('html');
+      const [autoRun, setAutoRun] = useState(true);
+
+      const editorRef = useRef(null);
+      const monacoRef = useRef(null);
+      const editorDivRef = useRef(null);
+      const iframeRef = useRef(null);
+      const [consoleText, setConsoleText] = useState('');
+
+      // AI Chat
+      const [aiInput, setAiInput] = useState('');
+      const [aiLoading, setAiLoading] = useState(false);
+      const [chat, setChat] = useState([]);
+
+      const buildHtmlForPreview = ({ language, code }) => {
+      // теперь files доступна
       // Билдим карту Blob URL для всех файлов проекта
       const makeBlobURL = (content, type) => URL.createObjectURL(new Blob([content], { type }));
       const urlMap = new Map();
@@ -410,29 +435,7 @@
         '</body></html>';
 
       return htmlTemplate;
-    }
-
-    function App() {
-      const [backendOk, setBackendOk] = useState(false);
-      const [files, setFiles] = useState([
-        { name: 'index.html', language: 'html', content: '<h1>Hello iCoder 🚀</h1><p>Tap RUN to render.</p>' },
-        { name: 'main.js', language: 'javascript', content: 'console.log("👋 Hello from JS!");' },
-      ]);
-      const [current, setCurrent] = useState(0);
-      const [lang, setLang] = useState('html');
-      const [autoRun, setAutoRun] = useState(true);
-
-      const editorRef = useRef(null);
-      const monacoRef = useRef(null);
-      const editorDivRef = useRef(null);
-      const iframeRef = useRef(null);
-      const [consoleText, setConsoleText] = useState('');
-
-      // AI Chat
-      const [aiInput, setAiInput] = useState('');
-      const [aiLoading, setAiLoading] = useState(false);
-      const [chat, setChat] = useState([]);
-
+      };
       // History (на уровне файла)
       const [versions, setVersions] = useState({}); // {filename: [{ts, content}]}
 

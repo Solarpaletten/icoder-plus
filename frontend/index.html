@@ -1,147 +1,351 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>iCoder Plus — AI-first IDE v2.0</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iCoder Plus — AI-first IDE v2.0</title>
 
-<!-- React 18 (UMD) + Babel для JSX в одном файле -->
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- React 18 (UMD) + Babel для JSX в одном файле -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-<!-- TypeScript в браузере (для быстрого транспайла TS→JS) -->
-<script src="https://unpkg.com/typescript@5.4.5/lib/typescript.js"></script>
+  <!-- TypeScript в браузере (для быстрого транспайла TS→JS) -->
+  <script src="https://unpkg.com/typescript@5.4.5/lib/typescript.js"></script>
 
-<!-- JSZip для экспорта/импорта проектов -->
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <!-- JSZip для экспорта/импорта проектов -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
-<!-- Monaco Editor через CDN -->
-<script>window.require = undefined;</script>
-<script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
-<script>
-  const MONACO_BASE = 'https://unpkg.com/monaco-editor@0.45.0/min';
-  // Настраиваем AMD loader
-  require.config({ paths: { 'vs': `${MONACO_BASE}/vs` }});
-  function loadMonaco() {
-    return new Promise((resolve) => {
-      if (window.monaco) return resolve(window.monaco);
-      require(['vs/editor/editor.main'], () => resolve(window.monaco));
-    });
-  }
-</script>
+  <!-- Monaco Editor через CDN -->
+  <script>window.require = undefined;</script>
+  <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
+  <script>
+    const MONACO_BASE = 'https://unpkg.com/monaco-editor@0.45.0/min';
+    // Настраиваем AMD loader
+    require.config({ paths: { 'vs': `${MONACO_BASE}/vs` } });
+    function loadMonaco() {
+      return new Promise((resolve) => {
+        if (window.monaco) return resolve(window.monaco);
+        require(['vs/editor/editor.main'], () => resolve(window.monaco));
+      });
+    }
+  </script>
 
-<style>
-  :root {
-    --bg: #0b1220; --panel: #121a2a; --text: #e8ecf1; --muted: #9fb0c6;
-    --green: #29d398; --yellow: #f9cc45; --red: #ff6b6b; --brand: #7b5cff;
-    --border: #1f2a44;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body, #root { height: 100%; }
-  body {
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    color: var(--text);
-    background: radial-gradient(1200px 600px at 20% 0%, #1a2340 0%, #0b1220 55%, #0b1220 100%);
-  }
-  .app { height: 100%; display: grid; grid-template-rows: 64px 1fr; }
-  .topbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 16px; border-bottom: 1px solid var(--border); background: rgba(18,26,42,0.75); backdrop-filter: blur(8px);
-  }
-  .brand { display:flex; align-items:center; gap:12px; font-weight:700; letter-spacing:.3px; }
-  .badge { font-size:12px; color: var(--muted) }
-  .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
-  .ok { background: var(--green); } .warn { background: var(--yellow); } .err { background: var(--red); }
-  .main { display:grid; grid-template-columns: 260px 1fr 420px; height: calc(100vh - 64px); }
-  .panel { border-right:1px solid var(--border); background: rgba(18,26,42,0.6); }
-  .panel-right { border-left:1px solid var(--border); }
-  .left { padding:12px; overflow:auto; }
-  .files-title { font-size:13px; color:var(--muted); margin-bottom:8px; }
-  .file-item { padding:8px 10px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; cursor:pointer; background:#0f1627;}
-  .file-item.active { outline:1px solid var(--brand); }
-  .upload { margin:8px 0 12px; }
-  .editor { height: 100%; }
-  .header-row {
-    display:flex; align-items:center; gap:10px; padding:10px; border-bottom:1px solid var(--border); background:#0f1627;
-  }
-  select, button, .chk {
-    background:#0f1627; color:var(--text); border:1px solid var(--border); border-radius:10px; padding:8px 10px; font:inherit;
-  }
-  button.primary { background: var(--brand); border-color: transparent; font-weight:600; }
-  button:disabled { opacity:.6; cursor:not-allowed; }
-  .tabs { display:flex; gap:8px; padding:10px; border-bottom:1px solid var(--border); background:#0f1627; }
-  .tab { padding:8px 10px; border:1px solid var(--border); border-radius:10px; cursor:pointer; background:#0f1627; }
-  .tab.active { background: #1b2540; border-color: var(--brand); }
-  .right-body { height: calc(100% - 92px); overflow:auto; padding:12px;}
-  .preview-wrap { border:1px solid var(--border); border-radius:12px; overflow:hidden; background:#0f1627 }
-  iframe { width:100%; height:360px; border:0; background:#0b1020 }
-  .console { background:#0b1020; padding:10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:13px; color:#d8e1f0; height:120px; overflow:auto; border-top:1px solid var(--border); }
-  .ai-row { display:flex; gap:8px; }
-  .ai-row input { flex:1; }
-  .ai-chat { display:flex; flex-direction:column; gap:10px; }
-  .msg { padding:10px; border-radius:10px; max-width:90%; }
-  .you { background:#0f2b4a; align-self:flex-end; }
-  .ai  { background:#202b45; align-self:flex-start; }
-  .hist-item { padding:8px 10px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; background:#0f1627; display:flex; justify-content:space-between; gap:8px }
-  .muted { color:var(--muted); font-size:12px }
-</style>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #121a2a;
+      --text: #e8ecf1;
+      --muted: #9fb0c6;
+      --green: #29d398;
+      --yellow: #f9cc45;
+      --red: #ff6b6b;
+      --brand: #7b5cff;
+      --border: #1f2a44;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body,
+    #root {
+      height: 100%;
+    }
+
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px 600px at 20% 0%, #1a2340 0%, #0b1220 55%, #0b1220 100%);
+    }
+
+    .app {
+      height: 100%;
+      display: grid;
+      grid-template-rows: 64px 1fr;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(18, 26, 42, 0.75);
+      backdrop-filter: blur(8px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      letter-spacing: .3px;
+    }
+
+    .badge {
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+    }
+
+    .ok {
+      background: var(--green);
+    }
+
+    .warn {
+      background: var(--yellow);
+    }
+
+    .err {
+      background: var(--red);
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 260px 1fr 420px;
+      height: calc(100vh - 64px);
+    }
+
+    .panel {
+      border-right: 1px solid var(--border);
+      background: rgba(18, 26, 42, 0.6);
+    }
+
+    .panel-right {
+      border-left: 1px solid var(--border);
+    }
+
+    .left {
+      padding: 12px;
+      overflow: auto;
+    }
+
+    .files-title {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .file-item {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      background: #0f1627;
+    }
+
+    .file-item.active {
+      outline: 1px solid var(--brand);
+    }
+
+    .upload {
+      margin: 8px 0 12px;
+    }
+
+    .editor {
+      height: 100%;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      background: #0f1627;
+    }
+
+    select,
+    button,
+    .chk {
+      background: #0f1627;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font: inherit;
+    }
+
+    button.primary {
+      background: var(--brand);
+      border-color: transparent;
+      font-weight: 600;
+    }
+
+    button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      background: #0f1627;
+    }
+
+    .tab {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      background: #0f1627;
+    }
+
+    .tab.active {
+      background: #1b2540;
+      border-color: var(--brand);
+    }
+
+    .right-body {
+      height: calc(100% - 92px);
+      overflow: auto;
+      padding: 12px;
+    }
+
+    .preview-wrap {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #0f1627
+    }
+
+    iframe {
+      width: 100%;
+      height: 360px;
+      border: 0;
+      background: #0b1020
+    }
+
+    .console {
+      background: #0b1020;
+      padding: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      color: #d8e1f0;
+      height: 120px;
+      overflow: auto;
+      border-top: 1px solid var(--border);
+    }
+
+    .ai-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .ai-row input {
+      flex: 1;
+    }
+
+    .ai-chat {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .msg {
+      padding: 10px;
+      border-radius: 10px;
+      max-width: 90%;
+    }
+
+    .you {
+      background: #0f2b4a;
+      align-self: flex-end;
+    }
+
+    .ai {
+      background: #202b45;
+      align-self: flex-start;
+    }
+
+    .hist-item {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: #0f1627;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 12px
+    }
+  </style>
 </head>
+
 <body>
-<!-- Можно переопределить API через window.API_BASE -->
-<script>window.API_BASE = window.API_BASE || "https://icoder-plus.onrender.com";</script>
+  <!-- Можно переопределить API через window.API_BASE -->
+  <script>window.API_BASE = window.API_BASE || "https://icoder-plus.onrender.com";</script>
 
-<div id="root"></div>
+  <div id="root"></div>
 
-<script type="text/babel">
-const { useEffect, useRef, useState } = React;
+  <script type="text/babel">
+    const { useEffect, useRef, useState } = React;
 
-const API_BASE = window.API_BASE;
+    const API_BASE = window.API_BASE;
 
-// утилиты
-const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
-const extToLang = (name) => {
-  const ext = (name.split('.').pop()||'').toLowerCase();
-  if (ext === 'ts' || ext === 'tsx') return 'typescript';
-  if (ext === 'json') return 'json';
-  if (ext === 'css') return 'css';
-  if (ext === 'html' || ext === 'htm') return 'html';
-  return 'javascript';
-};
+    // утилиты
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const extToLang = (name) => {
+      const ext = (name.split('.').pop() || '').toLowerCase();
+      if (ext === 'ts' || ext === 'tsx') return 'typescript';
+      if (ext === 'json') return 'json';
+      if (ext === 'css') return 'css';
+      if (ext === 'html' || ext === 'htm') return 'html';
+      return 'javascript';
+    };
 
-// HTML-обёртка для предпросмотра с автоподключением CSS/JS
-function buildHtmlForPreview({ language, code }) {
-  // Билдим карту Blob URL для всех файлов проекта
-  const makeBlobURL = (content, type) => URL.createObjectURL(new Blob([content], { type }));
-  const urlMap = new Map();
-  const byExt = (name)=> (name.split('.').pop()||'').toLowerCase();
+    // HTML-обёртка для предпросмотра с автоподключением CSS/JS
+    function buildHtmlForPreview({ language, code }) {
+      // Билдим карту Blob URL для всех файлов проекта
+      const makeBlobURL = (content, type) => URL.createObjectURL(new Blob([content], { type }));
+      const urlMap = new Map();
+      const byExt = (name) => (name.split('.').pop() || '').toLowerCase();
 
-  // Генерим URL-ы на все файлы для подключения относительными путями
-  files.forEach(f => {
-    const ext = byExt(f.name);
-    let mime = 'text/plain';
-    if (ext==='js' || ext==='mjs' || ext==='cjs') mime = 'text/javascript';
-    else if (ext==='css') mime = 'text/css';
-    else if (ext==='html' || ext==='htm') mime = 'text/html';
-    else if (['png','jpg','jpeg','gif','svg','webp','ico'].includes(ext)) mime = 'image/' + (ext==='svg'?'svg+xml':ext);
-    urlMap.set(f.name, makeBlobURL(f.content, mime));
-  });
+      // Генерим URL-ы на все файлы для подключения относительными путями
+      files.forEach(f => {
+        const ext = byExt(f.name);
+        let mime = 'text/plain';
+        if (ext === 'js' || ext === 'mjs' || ext === 'cjs') mime = 'text/javascript';
+        else if (ext === 'css') mime = 'text/css';
+        else if (ext === 'html' || ext === 'htm') mime = 'text/html';
+        else if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico'].includes(ext)) mime = 'image/' + (ext === 'svg' ? 'svg+xml' : ext);
+        urlMap.set(f.name, makeBlobURL(f.content, mime));
+      });
 
-  // Ветка HTML — автоподключение CSS/JS
-  if (language === 'html') {
-    let html = code;
+      // Ветка HTML — автоподключение CSS/JS
+      if (language === 'html') {
+        let html = code;
 
-    // Подмена src/href на blob-URL, если файл существует в проекте
-    html = html.replace(/(src|href)\s*=\s*["']([^"']+)["']/g, (m,attr,ref)=>{
-      if (/^(https?:)?\/\//i.test(ref)) return m;
-      const key = files.find(f => f.name.endsWith(ref))?.name;
-      if (key && urlMap.get(key)) return attr + '="' + urlMap.get(key) + '"';
-      return m;
-    });
+        // Подмена src/href на blob-URL, если файл существует в проекте
+        html = html.replace(/(src|href)\s*=\s*["']([^"']+)["']/g, (m, attr, ref) => {
+          if (/^(https?:)?\/\//i.test(ref)) return m;
+          const key = files.find(f => f.name.endsWith(ref))?.name;
+          if (key && urlMap.get(key)) return attr + '="' + urlMap.get(key) + '"';
+          return m;
+        });
 
-    
-    // Автоинжект CSS/JS если нет явных подключений
-    const hasScript = /<script\b/i.test(html);
+
+        // Автоинжект CSS/JS если нет явных подключений
+        const hasScript = /<script\b/i.test(html);
         const hasStyle = /<link\b|<style\b/i.test(html);
 
         let inject = '';
@@ -159,439 +363,454 @@ function buildHtmlForPreview({ language, code }) {
             if (url) inject += '<script src="' + url + '"><\/script>\n';
           });
         }
-    
 
-    if (inject) {
-      if (/<\/head>/i.test(html)) html = html.replace(/<\/head>/i, inject + '\n</head>');
-      else html = inject + '\n' + html;
-    }
 
-    return html.trim().toLowerCase().includes('<!doctype')
-      ? html
-      : '<!doctype html><html><head><meta charset="utf-8"><title>Preview</title></head><body>' + html + '</body></html>';
-  }
-
-  // Ветка JS/TS
-  let js = code;
-  if (language === 'typescript') {
-    try {
-      js = window.ts.transpileModule(code, { compilerOptions: { target: 'ES2020', module: 'None' } }).outputText;
-    } catch (e) {
-      js = 'console.error(' + JSON.stringify(String(e)) + ');';
-    }
-  }
-
-  const htmlTemplate = '<!doctype html><html><head><meta charset="utf-8"><title>Preview</title>' +
-    '<style>html,body{background:#0b1020;color:#d8e1f0;font-family:ui-monospace,monospace;margin:0}' +
-    '#out{white-space:pre-wrap;padding:10px;border-top:1px solid #24304f}</style>' +
-    '</head><body>' +
-    '<div id="app"></div>' +
-    '<pre id="out"></pre>' +
-    '<script>' +
-    '(function(){' +
-    '  const out = document.getElementById(\'out\');' +
-    '  const orig = console.log;' +
-    '  console.log = function(){ orig.apply(console, arguments);' +
-    '    out.textContent += Array.from(arguments).map(a => typeof a===\'object\'? JSON.stringify(a): String(a)).join(\' \') + "\\n";' +
-    '  };' +
-    '})();' +
-    '<\/script>' +
-    '<script>' +
-    'try {' +
-    js +
-    '} catch (e) {' +
-    '  console.log(\'❌ Error:\', e && e.message ? e.message : String(e));' +
-    '}' +
-    '<\/script>' +
-    '</body></html>';
-  
-  return htmlTemplate;
-}
-
-function App(){
-  const [backendOk, setBackendOk] = useState(false);
-  const [files, setFiles] = useState([
-    { name: 'index.html', language: 'html', content: '<h1>Hello iCoder 🚀</h1><p>Tap RUN to render.</p>' },
-    { name: 'main.js', language: 'javascript', content: 'console.log("👋 Hello from JS!");' },
-  ]);
-  const [current, setCurrent] = useState(0);
-  const [lang, setLang] = useState('html');
-  const [autoRun, setAutoRun] = useState(true);
-
-  const editorRef = useRef(null);
-  const monacoRef = useRef(null);
-  const editorDivRef = useRef(null);
-  const iframeRef = useRef(null);
-  const [consoleText, setConsoleText] = useState('');
-
-  // AI Chat
-  const [aiInput, setAiInput] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [chat, setChat] = useState([]);
-
-  // History (на уровне файла)
-  const [versions, setVersions] = useState({}); // {filename: [{ts, content}]}
-
-  // HEALTH CHECK
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`${API_BASE}/health`, { cache:'no-store' });
-        setBackendOk(r.ok);
-      } catch { setBackendOk(false); }
-    })();
-  }, []);
-
-  // Monaco init
-  useEffect(() => {
-    let disposed = false;
-    loadMonaco().then((monaco) => {
-      if (disposed) return;
-      monacoRef.current = monaco;
-      const model = monaco.editor.createModel(files[current].content, lang);
-      editorRef.current = monaco.editor.create(editorDivRef.current, {
-        model,
-        theme: 'vs-dark',
-        minimap: { enabled:false },
-        wordWrap: 'on',
-        tabSize: 2,
-        fontSize: 14,
-        automaticLayout: true,
-      });
-      // авто-запуск
-      let tm = null;
-      editorRef.current.onDidChangeModelContent(() => {
-        const content = editorRef.current.getValue();
-        updateFileContent(content);
-        if (autoRun) {
-          clearTimeout(tm);
-          tm = setTimeout(() => runPreview(), 350);
+        if (inject) {
+          if (/<\/head>/i.test(html)) html = html.replace(/<\/head>/i, inject + '\n</head>');
+          else html = inject + '\n' + html;
         }
-      });
-      if (autoRun) runPreview();
-    });
-    return () => {
-      disposed = true;
-      if (editorRef.current) editorRef.current.dispose();
-    };
-    // eslint-disable-next-line
-  }, []);
 
-  // переключение файла
-  const openFile = (idx) => {
-    setCurrent(idx);
-    const f = files[idx];
-    const monaco = monacoRef.current;
-    if (!monaco || !editorRef.current) return;
-    const newModel = monaco.editor.createModel(f.content, f.language);
-    editorRef.current.setModel(newModel);
-    setLang(f.language);
-    if (autoRun) runPreview();
-  };
-
-  // смена языка
-  const changeLanguage = (newLang) => {
-    setLang(newLang);
-    const monaco = monacoRef.current;
-    if (monaco && editorRef.current) {
-      monaco.editor.setModelLanguage(editorRef.current.getModel(), newLang);
-    }
-    const f = files[current];
-    f.language = newLang;
-    setFiles([...files]);
-    if (autoRun) runPreview();
-  };
-
-  // обновить содержимое текущего файла
-  const updateFileContent = (content) => {
-    files[current].content = content;
-    setFiles([...files]);
-  };
-
-  // RUN
-  const runPreview = () => {
-    const f = files[current];
-    const code = editorRef.current ? editorRef.current.getValue() : f.content;
-    const doc = buildHtmlForPreview({ language: f.language, code });
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-    const blob = new Blob([doc], { type: 'text/html' });
-    iframe.src = URL.createObjectURL(blob);
-    // консоль iframe будет писать в свой <pre>, мы его дополнительно не читаем
-    setConsoleText(''); // можно чистить внешний лог
-  };
-
-  // загрузка папки
-  const onUploadFolder = async (ev) => {
-    const list = Array.from(ev.target.files || []);
-    if (!list.length) return;
-    for (const file of list) {
-      const content = await file.text();
-      const language = extToLang(file.name);
-      files.push({ name: file.webkitRelativePath || file.name, content, language });
-    }
-    setFiles([...files]);
-    openFile(files.findIndex(f=>/index\.html$/i.test(f.name)) || files.length-1);
-    ev.target.value = '';
-  };
-
-  // drag&drop файлов/папок
-  const onDropFiles = async (ev) => {
-    ev.preventDefault();
-    const items = ev.dataTransfer.items;
-    if (!items) return;
-
-    const entries = [];
-    for (const it of items) {
-      const entry = it.webkitGetAsEntry && it.webkitGetAsEntry();
-      if (entry) entries.push(entry);
-    }
-    const readEntry = async (entry, path='') => {
-      if (entry.isFile) {
-        await new Promise((res,rej)=>{
-          entry.file(async (file)=>{
-            const content = await file.text();
-            const name = path ? `${path}/${file.name}` : file.name;
-            files.push({ name, content, language: extToLang(name) });
-            res();
-          }, rej);
-        });
-      } else if (entry.isDirectory) {
-        const reader = entry.createReader();
-        await new Promise((res,rej)=>{
-          reader.readEntries(async (ents)=>{
-            for (const e of ents) await readEntry(e, path ? `${path}/${entry.name}` : entry.name);
-            res();
-          }, rej);
-        });
+        return html.trim().toLowerCase().includes('<!doctype')
+          ? html
+          : '<!doctype html><html><head><meta charset="utf-8"><title>Preview</title></head><body>' + html + '</body></html>';
       }
-    };
-    for (const e of entries) await readEntry(e);
-    setFiles([...files]);
-    openFile(files.findIndex(f=>/index\.html$/i.test(f.name)) || files.length-1);
-  };
 
-  // экспорт ZIP
-  const exportZip = async () => {
-    const zip = new JSZip();
-    files.forEach(f => zip.file(f.name, f.content));
-    const blob = await zip.generateAsync({type:'blob'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'project.zip';
-    a.click();
-  };
+      // Ветка JS/TS
+      let js = code;
+      if (language === 'typescript') {
+        try {
+          js = window.ts.transpileModule(code, { compilerOptions: { target: 'ES2020', module: 'None' } }).outputText;
+        } catch (e) {
+          js = 'console.error(' + JSON.stringify(String(e)) + ');';
+        }
+      }
 
-  // импорт ZIP
-  const onImportZip = async (ev) => {
-    const file = ev.target.files?.[0];
-    if (!file) return;
-    const zip = await JSZip.loadAsync(file);
-    const newFiles = [];
-    await Promise.all(Object.keys(zip.files).map(async (p)=>{
-      const zf = zip.files[p];
-      if (zf.dir) return;
-      const content = await zf.async('string');
-      newFiles.push({ name: p, content, language: extToLang(p) });
-    }));
-    newFiles.sort((a,b)=>a.name.localeCompare(b.name));
-    setFiles([...files, ...newFiles]);
-    const idx = [...files, ...newFiles].findIndex(f=>/index\.html$/i.test(f.name));
-    openFile(idx >= 0 ? idx : files.length - 1);
-    ev.target.value = '';
-  };
+      const htmlTemplate = '<!doctype html><html><head><meta charset="utf-8"><title>Preview</title>' +
+        '<style>html,body{background:#0b1020;color:#d8e1f0;font-family:ui-monospace,monospace;margin:0}' +
+        '#out{white-space:pre-wrap;padding:10px;border-top:1px solid #24304f}</style>' +
+        '</head><body>' +
+        '<div id="app"></div>' +
+        '<pre id="out"></pre>' +
+        '<script>' +
+        '(function(){' +
+        '  const out = document.getElementById(\'out\');' +
+        '  const orig = console.log;' +
+        '  console.log = function(){ orig.apply(console, arguments);' +
+        '    out.textContent += Array.from(arguments).map(a => typeof a===\'object\'? JSON.stringify(a): String(a)).join(\' \') + "\\n";' +
+        '  };' +
+        '})();' +
+        '<\/script>' +
+        '<script>' +
+        'try {' +
+        js +
+        '} catch (e) {' +
+        '  console.log(\'❌ Error:\', e && e.message ? e.message : String(e));' +
+        '}' +
+        '<\/script>' +
+        '</body></html>';
 
-  // сохранить версию
-  const saveVersion = () => {
-    const f = files[current];
-    const content = editorRef.current ? editorRef.current.getValue() : f.content;
-    const key = f.name;
-    const list = versions[key] || [];
-    list.unshift({ ts: Date.now(), content });
-    const next = { ...versions, [key]: list.slice(0, 30) };
-    setVersions(next);
-  };
-
-  // restore
-  const restoreVersion = (key, idx) => {
-    const v = (versions[key] || [])[idx];
-    if (!v) return;
-    const monaco = monacoRef.current;
-    if (monaco && editorRef.current) {
-      editorRef.current.setValue(v.content);
+      return htmlTemplate;
     }
-    updateFileContent(v.content);
-    if (autoRun) runPreview();
-  };
 
-  // AI analyze
-  const aiAnalyze = async () => {
-    try {
+    function App() {
+      const [backendOk, setBackendOk] = useState(false);
+      const [files, setFiles] = useState([
+        { name: 'index.html', language: 'html', content: '<h1>Hello iCoder 🚀</h1><p>Tap RUN to render.</p>' },
+        { name: 'main.js', language: 'javascript', content: 'console.log("👋 Hello from JS!");' },
+      ]);
+      const [current, setCurrent] = useState(0);
+      const [lang, setLang] = useState('html');
+      const [autoRun, setAutoRun] = useState(true);
+
+      const editorRef = useRef(null);
+      const monacoRef = useRef(null);
+      const editorDivRef = useRef(null);
+      const iframeRef = useRef(null);
+      const [consoleText, setConsoleText] = useState('');
+
+      // AI Chat
+      const [aiInput, setAiInput] = useState('');
+      const [aiLoading, setAiLoading] = useState(false);
+      const [chat, setChat] = useState([]);
+
+      // History (на уровне файла)
+      const [versions, setVersions] = useState({}); // {filename: [{ts, content}]}
+
+      // HEALTH CHECK
+      useEffect(() => {
+        (async () => {
+          try {
+            const r = await fetch(`${API_BASE}/health`, { cache: 'no-store' });
+            setBackendOk(r.ok);
+          } catch { setBackendOk(false); }
+        })();
+      }, []);
+
+      // Monaco init
+      useEffect(() => {
+        let disposed = false;
+        loadMonaco().then((monaco) => {
+          if (disposed) return;
+          monacoRef.current = monaco;
+          const model = monaco.editor.createModel(files[current].content, lang);
+          editorRef.current = monaco.editor.create(editorDivRef.current, {
+            model,
+            theme: 'vs-dark',
+            minimap: { enabled: false },
+            wordWrap: 'on',
+            tabSize: 2,
+            fontSize: 14,
+            automaticLayout: true,
+          });
+          // авто-запуск
+          let tm = null;
+          editorRef.current.onDidChangeModelContent(() => {
+            const content = editorRef.current.getValue();
+            updateFileContent(content);
+            if (autoRun) {
+              clearTimeout(tm);
+              tm = setTimeout(() => runPreview(), 350);
+            }
+          });
+          if (autoRun) runPreview();
+        });
+        return () => {
+          disposed = true;
+          if (editorRef.current) editorRef.current.dispose();
+        };
+        // eslint-disable-next-line
+      }, []);
+
+      // переключение файла
+      const openFile = (idx) => {
+        setCurrent(idx);
+        const f = files[idx];
+        const monaco = monacoRef.current;
+        if (!monaco || !editorRef.current) return;
+        const newModel = monaco.editor.createModel(f.content, f.language);
+        editorRef.current.setModel(newModel);
+        setLang(f.language);
+        if (autoRun) runPreview();
+      };
+
+      // смена языка
+      const changeLanguage = (newLang) => {
+        setLang(newLang);
+        const monaco = monacoRef.current;
+        if (monaco && editorRef.current) {
+          monaco.editor.setModelLanguage(editorRef.current.getModel(), newLang);
+        }
+        const f = files[current];
+        f.language = newLang;
+        setFiles([...files]);
+        if (autoRun) runPreview();
+      };
+
+      // обновить содержимое текущего файла
+      const updateFileContent = (content) => {
+        files[current].content = content;
+        setFiles([...files]);
+      };
+
+      // RUN
+      const runPreview = () => {
+        const f = files[current];
+        const code = editorRef.current ? editorRef.current.getValue() : f.content;
+        const doc = buildHtmlForPreview({ language: f.language, code });
+        const iframe = iframeRef.current;
+        if (!iframe) return;
+        const blob = new Blob([doc], { type: 'text/html' });
+        iframe.src = URL.createObjectURL(blob);
+        // консоль iframe будет писать в свой <pre>, мы его дополнительно не читаем
+        setConsoleText(''); // можно чистить внешний лог
+      };
+
+      // загрузка папки
+      const onUploadFolder = async (ev) => {
+        const list = Array.from(ev.target.files || []);
+        if (!list.length) return;
+        for (const file of list) {
+          const content = await file.text();
+          const language = extToLang(file.name);
+          files.push({ name: file.webkitRelativePath || file.name, content, language });
+        }
+        setFiles([...files]);
+        openFile(files.findIndex(f => /index\.html$/i.test(f.name)) || files.length - 1);
+        ev.target.value = '';
+      };
+
+      // загрузка локальных файлов (добавить после onUploadFolder)
+      const onUpload = async (ev) => {
+        const list = Array.from(ev.target.files || []);
+        if (!list.length) return;
+        for (const file of list) {
+          const content = await file.text();
+          const language = extToLang(file.name);
+          files.push({ name: file.name, content, language });
+        }
+        setFiles([...files]);
+        openFile(files.length - 1);
+        ev.target.value = '';
+      };
+
+      // drag&drop файлов/папок
+      const onDropFiles = async (ev) => {
+        ev.preventDefault();
+        const items = ev.dataTransfer.items;
+        if (!items) return;
+
+        const entries = [];
+        for (const it of items) {
+          const entry = it.webkitGetAsEntry && it.webkitGetAsEntry();
+          if (entry) entries.push(entry);
+        }
+        const readEntry = async (entry, path = '') => {
+          if (entry.isFile) {
+            await new Promise((res, rej) => {
+              entry.file(async (file) => {
+                const content = await file.text();
+                const name = path ? `${path}/${file.name}` : file.name;
+                files.push({ name, content, language: extToLang(name) });
+                res();
+              }, rej);
+            });
+          } else if (entry.isDirectory) {
+            const reader = entry.createReader();
+            await new Promise((res, rej) => {
+              reader.readEntries(async (ents) => {
+                for (const e of ents) await readEntry(e, path ? `${path}/${entry.name}` : entry.name);
+                res();
+              }, rej);
+            });
+          }
+        };
+        for (const e of entries) await readEntry(e);
+        setFiles([...files]);
+        openFile(files.findIndex(f => /index\.html$/i.test(f.name)) || files.length - 1);
+      };
+
+      // экспорт ZIP
+      const exportZip = async () => {
+        const zip = new JSZip();
+        files.forEach(f => zip.file(f.name, f.content));
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'project.zip';
+        a.click();
+      };
+
+      // импорт ZIP
+      const onImportZip = async (ev) => {
+        const file = ev.target.files?.[0];
+        if (!file) return;
+        const zip = await JSZip.loadAsync(file);
+        const newFiles = [];
+        await Promise.all(Object.keys(zip.files).map(async (p) => {
+          const zf = zip.files[p];
+          if (zf.dir) return;
+          const content = await zf.async('string');
+          newFiles.push({ name: p, content, language: extToLang(p) });
+        }));
+        newFiles.sort((a, b) => a.name.localeCompare(b.name));
+        setFiles([...files, ...newFiles]);
+        const idx = [...files, ...newFiles].findIndex(f => /index\.html$/i.test(f.name));
+        openFile(idx >= 0 ? idx : files.length - 1);
+        ev.target.value = '';
+      };
+
+      // сохранить версию
+      const saveVersion = () => {
+        const f = files[current];
+        const content = editorRef.current ? editorRef.current.getValue() : f.content;
+        const key = f.name;
+        const list = versions[key] || [];
+        list.unshift({ ts: Date.now(), content });
+        const next = { ...versions, [key]: list.slice(0, 30) };
+        setVersions(next);
+      };
+
+      // restore
+      const restoreVersion = (key, idx) => {
+        const v = (versions[key] || [])[idx];
+        if (!v) return;
+        const monaco = monacoRef.current;
+        if (monaco && editorRef.current) {
+          editorRef.current.setValue(v.content);
+        }
+        updateFileContent(v.content);
+        if (autoRun) runPreview();
+      };
+
+      // AI analyze
+      const aiAnalyze = async () => {
+        try {
+          const f = files[current];
+          const code = editorRef.current ? editorRef.current.getValue() : f.content;
+          const r = await fetch(`${API_BASE}/api/ai/analyze`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, fileName: f.name, analysisType: 'review' })
+          });
+          const j = await r.json();
+          alert(j?.data ? JSON.stringify(j.data, null, 2) : JSON.stringify(j));
+        } catch (e) {
+          alert('AI analyze failed: ' + String(e));
+        }
+      };
+
+      // AI chat
+      const sendChat = async () => {
+        if (!aiInput.trim()) return;
+        const f = files[current];
+        const code = editorRef.current ? editorRef.current.getValue() : f.content;
+        const you = { role: 'you', text: aiInput };
+        setChat(c => [...c, you]);
+        setAiInput(''); setAiLoading(true);
+        try {
+          const r = await fetch(`${API_BASE}/api/ai/chat`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: you.text, code, fileName: f.name })
+          });
+          const j = await r.json();
+          const text = j?.data?.message || j?.error || 'No response';
+          setChat(c => [...c, { role: 'ai', text }]);
+        } catch (e) {
+          setChat(c => [...c, { role: 'ai', text: 'AI error: ' + String(e) }]);
+        } finally {
+          setAiLoading(false);
+        }
+      };
+
       const f = files[current];
-      const code = editorRef.current ? editorRef.current.getValue() : f.content;
-      const r = await fetch(`${API_BASE}/api/ai/analyze`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ code, fileName: f.name, analysisType:'review' })
-      });
-      const j = await r.json();
-      alert(j?.data ? JSON.stringify(j.data, null, 2) : JSON.stringify(j));
-    } catch (e) {
-      alert('AI analyze failed: ' + String(e));
-    }
-  };
+      const vlist = versions[f.name] || [];
 
-  // AI chat
-  const sendChat = async () => {
-    if (!aiInput.trim()) return;
-    const f = files[current];
-    const code = editorRef.current ? editorRef.current.getValue() : f.content;
-    const you = { role:'you', text: aiInput };
-    setChat(c => [...c, you]);
-    setAiInput(''); setAiLoading(true);
-    try {
-      const r = await fetch(`${API_BASE}/api/ai/chat`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ message: you.text, code, fileName: f.name })
-      });
-      const j = await r.json();
-      const text = j?.data?.message || j?.error || 'No response';
-      setChat(c => [...c, { role:'ai', text }]);
-    } catch (e) {
-      setChat(c => [...c, { role:'ai', text: 'AI error: ' + String(e) }]);
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const f = files[current];
-  const vlist = versions[f.name] || [];
-
-  return (
-    <div className="app">
-      <div className="topbar">
-        <div className="brand">
-          <span style={{fontSize:22}}>⚡ iCoder Plus</span>
-          <span className="badge">AI-first IDE v2.0</span>
-        </div>
-        <div className="badge">
-          <span className={`status-dot ${backendOk ? 'ok' : 'warn'}`}></span>
-          Backend: {backendOk ? 'connected' : 'checking…'}
-        </div>
-      </div>
-
-      <div className="main">
-        {/* LEFT: files */}
-        <div className="panel left">
-          <div className="files-title">Files</div>
-          
-          <div style={{display:'grid', gap:'8px', margin:'8px 0 12px'}}>
-            <input className="upload" type="file" multiple onChange={onUpload}/>
-            <input type="file" webkitdirectory="true" directory="true" onChange={onUploadFolder}/>
-            <input type="file" accept=".zip" onChange={onImportZip}/>
-            <div
-              onDragOver={(e)=>{e.preventDefault();}}
-              onDrop={onDropFiles}
-              style={{padding:'10px', border:'1px dashed var(--border)', borderRadius:'8px', color:'var(--muted)'}}
-            >Drag & Drop files/folders here</div>
-            <button onClick={exportZip}>⬇ Export ZIP</button>
-          </div>
-
-          {files.map((fi, idx) => (
-            <div key={idx} className={`file-item ${idx===current?'active':''}`} onClick={()=>openFile(idx)}>
-              <div>{fi.name}</div>
-              <div className="muted">{fi.language}</div>
+      return (
+        <div className="app">
+          <div className="topbar">
+            <div className="brand">
+              <span style={{ fontSize: 22 }}>⚡ iCoder Plus</span>
+              <span className="badge">AI-first IDE v2.0</span>
             </div>
-          ))}
-        </div>
-
-        {/* CENTER: editor */}
-        <div className="panel" style={{borderRight:'none', display:'grid', gridTemplateRows:'auto 1fr'}}>
-          <div className="header-row">
-            <select value={lang} onChange={(e)=>changeLanguage(e.target.value)}>
-              <option value="javascript">JavaScript</option>
-              <option value="typescript">TypeScript</option>
-              <option value="html">HTML</option>
-              <option value="css">CSS</option>
-              <option value="json">JSON</option>
-            </select>
-            <button className="primary" onClick={runPreview}>▶ RUN</button>
-            <label className="chk" style={{display:'inline-flex', alignItems:'center', gap:8}}>
-              <input type="checkbox" checked={autoRun} onChange={(e)=>setAutoRun(e.target.checked)} />
-              Auto Run
-            </label>
-            <button onClick={saveVersion}>💾 Save Version</button>
-            <button onClick={aiAnalyze}>🧠 AI Analyze</button>
-            <div className="muted" style={{marginLeft:'auto'}}>{f.name}</div>
-          </div>
-          <div ref={editorDivRef} className="editor"></div>
-        </div>
-
-        {/* RIGHT: tabs */}
-        <RightPane
-          iframeRef={iframeRef}
-          consoleText={consoleText}
-          chat={chat}
-          setAiInput={setAiInput}
-          aiInput={aiInput}
-          aiLoading={aiLoading}
-          sendChat={sendChat}
-          versions={vlist}
-          restore={(idx)=>restoreVersion(f.name, idx)}
-        />
-      </div>
-    </div>
-  );
-}
-
-function RightPane({ iframeRef, consoleText, chat, setAiInput, aiInput, aiLoading, sendChat, versions, restore }){
-  const [tab, setTab] = useState('preview'); // preview | chat | history
-  return (
-    <div className="panel panel-right" style={{display:'grid', gridTemplateRows:'auto auto 1fr'}}>
-      <div className="tabs">
-        <div className={`tab ${tab==='preview'?'active':''}`} onClick={()=>setTab('preview')}>▶ Live Preview</div>
-        <div className={`tab ${tab==='chat'?'active':''}`} onClick={()=>setTab('chat')}>🤖 AI Chat</div>
-        <div className={`tab ${tab==='history'?'active':''}`} onClick={()=>setTab('history')}>📝 History</div>
-      </div>
-      <div className="right-body">
-        {tab==='preview' && (
-          <div className="preview-wrap">
-            <iframe ref={iframeRef} sandbox="allow-scripts allow-same-origin"></iframe>
-            <div className="console">{consoleText || 'Console output appears here…'}</div>
-          </div>
-        )}
-        {tab==='chat' && (
-          <div className="ai-chat">
-            <div className="ai-row">
-              <input placeholder="Ask AI about your code…" value={aiInput} onChange={(e)=>setAiInput(e.target.value)} />
-              <button className="primary" onClick={sendChat} disabled={aiLoading}>{aiLoading?'…':'Send'}</button>
-            </div>
-            <div>
-              {chat.map((m,i)=>(
-                <div key={i} className={`msg ${m.role==='you'?'you':'ai'}`}>{m.text}</div>
-              ))}
-              {!chat.length && <div className="muted">No messages yet.</div>}
+            <div className="badge">
+              <span className={`status-dot ${backendOk ? 'ok' : 'warn'}`}></span>
+              Backend: {backendOk ? 'connected' : 'checking…'}
             </div>
           </div>
-        )}
-        {tab==='history' && (
-          <div>
-            {!versions.length && <div className="muted">No versions yet. Use "Save Version".</div>}
-            {versions.map((v,i)=>(
-              <div key={i} className="hist-item">
-                <div>
-                  <div className="muted">{new Date(v.ts).toLocaleString()}</div>
-                </div>
-                <button onClick={()=>restore(i)}>Restore</button>
+
+          <div className="main">
+            {/* LEFT: files */}
+            <div className="panel left">
+              <div className="files-title">Files</div>
+
+              <div style={{ display: 'grid', gap: '8px', margin: '8px 0 12px' }}>
+                <input className="upload" type="file" multiple onChange={onUpload} />
+                <input type="file" webkitdirectory="true" directory="true" onChange={onUploadFolder} />
+                <input type="file" accept=".zip" onChange={onImportZip} />
+                <div
+                  onDragOver={(e) => { e.preventDefault(); }}
+                  onDrop={onDropFiles}
+                  style={{ padding: '10px', border: '1px dashed var(--border)', borderRadius: '8px', color: 'var(--muted)' }}
+                >Drag & Drop files/folders here</div>
+                <button onClick={exportZip}>⬇ Export ZIP</button>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-</script>
+              {files.map((fi, idx) => (
+                <div key={idx} className={`file-item ${idx === current ? 'active' : ''}`} onClick={() => openFile(idx)}>
+                  <div>{fi.name}</div>
+                  <div className="muted">{fi.language}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* CENTER: editor */}
+            <div className="panel" style={{ borderRight: 'none', display: 'grid', gridTemplateRows: 'auto 1fr' }}>
+              <div className="header-row">
+                <select value={lang} onChange={(e) => changeLanguage(e.target.value)}>
+                  <option value="javascript">JavaScript</option>
+                  <option value="typescript">TypeScript</option>
+                  <option value="html">HTML</option>
+                  <option value="css">CSS</option>
+                  <option value="json">JSON</option>
+                </select>
+                <button className="primary" onClick={runPreview}>▶ RUN</button>
+                <label className="chk" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <input type="checkbox" checked={autoRun} onChange={(e) => setAutoRun(e.target.checked)} />
+                  Auto Run
+                </label>
+                <button onClick={saveVersion}>💾 Save Version</button>
+                <button onClick={aiAnalyze}>🧠 AI Analyze</button>
+                <div className="muted" style={{ marginLeft: 'auto' }}>{f.name}</div>
+              </div>
+              <div ref={editorDivRef} className="editor"></div>
+            </div>
+
+            {/* RIGHT: tabs */}
+            <RightPane
+              iframeRef={iframeRef}
+              consoleText={consoleText}
+              chat={chat}
+              setAiInput={setAiInput}
+              aiInput={aiInput}
+              aiLoading={aiLoading}
+              sendChat={sendChat}
+              versions={vlist}
+              restore={(idx) => restoreVersion(f.name, idx)}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    function RightPane({ iframeRef, consoleText, chat, setAiInput, aiInput, aiLoading, sendChat, versions, restore }) {
+      const [tab, setTab] = useState('preview'); // preview | chat | history
+      return (
+        <div className="panel panel-right" style={{ display: 'grid', gridTemplateRows: 'auto auto 1fr' }}>
+          <div className="tabs">
+            <div className={`tab ${tab === 'preview' ? 'active' : ''}`} onClick={() => setTab('preview')}>▶ Live Preview</div>
+            <div className={`tab ${tab === 'chat' ? 'active' : ''}`} onClick={() => setTab('chat')}>🤖 AI Chat</div>
+            <div className={`tab ${tab === 'history' ? 'active' : ''}`} onClick={() => setTab('history')}>📝 History</div>
+          </div>
+          <div className="right-body">
+            {tab === 'preview' && (
+              <div className="preview-wrap">
+                <iframe ref={iframeRef} sandbox="allow-scripts allow-same-origin"></iframe>
+                <div className="console">{consoleText || 'Console output appears here…'}</div>
+              </div>
+            )}
+            {tab === 'chat' && (
+              <div className="ai-chat">
+                <div className="ai-row">
+                  <input placeholder="Ask AI about your code…" value={aiInput} onChange={(e) => setAiInput(e.target.value)} />
+                  <button className="primary" onClick={sendChat} disabled={aiLoading}>{aiLoading ? '…' : 'Send'}</button>
+                </div>
+                <div>
+                  {chat.map((m, i) => (
+                    <div key={i} className={`msg ${m.role === 'you' ? 'you' : 'ai'}`}>{m.text}</div>
+                  ))}
+                  {!chat.length && <div className="muted">No messages yet.</div>}
+                </div>
+              </div>
+            )}
+            {tab === 'history' && (
+              <div>
+                {!versions.length && <div className="muted">No versions yet. Use "Save Version".</div>}
+                {versions.map((v, i) => (
+                  <div key={i} className="hist-item">
+                    <div>
+                      <div className="muted">{new Date(v.ts).toLocaleString()}</div>
+                    </div>
+                    <button onClick={() => restore(i)}>Restore</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
 </body>
+
 </html>

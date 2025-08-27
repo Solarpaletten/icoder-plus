@@ -1,4 +1,3 @@
-cat > fix_dist_issue.sh << 'EOF'
 #!/bin/bash
 
 echo "Исправляем проблему с dist директорией"
@@ -117,7 +116,3 @@ echo "dist/index.html готов"
 ls -la dist/
 
 cd ..
-EOF
-
-chmod +x fix_dist_issue.sh
-./fix_dist_issue.sh

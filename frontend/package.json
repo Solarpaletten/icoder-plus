@@ -1,16 +1,11 @@
 {
   "name": "icoder-plus-frontend-static",
   "version": "2.0.0",
-  "description": "iCoder Plus Frontend - Static HTML with CDN React",
   "scripts": {
-    "build": "echo 'Using pre-built static files' && cp -r . dist-temp && mv dist-temp dist || echo 'dist already exists'",
-    "start": "echo 'Static site ready'",
-    "dev": "echo 'Open dist/index.html in browser'"
+    "build": "echo 'Static build complete'",
+    "start": "echo 'Static site ready'"
   },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "keywords": ["static", "html", "react", "ai", "ide"],
-  "author": "Solar IT Team",
-  "license": "MIT"
+  }
 }

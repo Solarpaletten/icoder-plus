@@ -4,7 +4,7 @@
   "description": "iCoder Plus Backend API",
   "main": "src/server.js",
   "scripts": {
-    "build": "echo 'JavaScript version - no build required ✅'",
+    "build": "npm install && echo 'Dependencies installed ✅'",
     "start": "node src/server.js",
     "dev": "node src/server.js"
   },

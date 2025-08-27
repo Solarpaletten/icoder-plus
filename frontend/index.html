@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>iCoder Plus — AI-first IDE v2.0</title>
 
-<!-- React 18 (UMD) + Babel для JSX в одном файле -->
+<!-- React 18 (UMD) + Babel для JSX в одном файле 10000 -->
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -32,56 +32,246 @@
   :root {
     --bg: #0b1220; --panel: #121a2a; --text: #e8ecf1; --muted: #9fb0c6;
     --green: #29d398; --yellow: #f9cc45; --red: #ff6b6b; --brand: #7b5cff;
-    --border: #1f2a44;
+    --border: #1f2a44; --accent: #2563eb;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body, #root { height: 100%; }
   body {
     font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    color: var(--text);
+    color: var(--text); overflow: hidden;
     background: radial-gradient(1200px 600px at 20% 0%, #1a2340 0%, #0b1220 55%, #0b1220 100%);
   }
-  .app { height: 100%; display: grid; grid-template-rows: 64px 1fr; }
+  .app { height: 100vh; display: grid; grid-template-rows: 64px 1fr; }
+  
+  /* Top Bar */
   .topbar {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 16px; border-bottom: 1px solid var(--border); background: rgba(18,26,42,0.75); backdrop-filter: blur(8px);
+    padding: 0 20px; border-bottom: 1px solid var(--border); 
+    background: rgba(18,26,42,0.95); backdrop-filter: blur(12px);
+    position: relative; z-index: 100;
   }
-  .brand { display:flex; align-items:center; gap:12px; font-weight:700; letter-spacing:.3px; }
-  .badge { font-size:12px; color: var(--muted) }
-  .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
-  .ok { background: var(--green); } .warn { background: var(--yellow); } .err { background: var(--red); }
-  .main { display:grid; grid-template-columns: 260px 1fr 420px; height: calc(100vh - 64px); }
-  .panel { border-right:1px solid var(--border); background: rgba(18,26,42,0.6); }
-  .panel-right { border-left:1px solid var(--border); }
-  .left { padding:12px; overflow:auto; }
-  .files-title { font-size:13px; color:var(--muted); margin-bottom:8px; }
-  .file-item { padding:8px 10px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; cursor:pointer; background:#0f1627;}
-  .file-item.active { outline:1px solid var(--brand); }
-  .upload { margin:8px 0 12px; }
-  .editor { height: 100%; }
-  .header-row {
-    display:flex; align-items:center; gap:10px; padding:10px; border-bottom:1px solid var(--border); background:#0f1627;
+  .brand { 
+    display: flex; align-items: center; gap: 16px; 
+    font-weight: 700; letter-spacing: 0.5px; font-size: 18px;
   }
-  select, button, .chk {
-    background:#0f1627; color:var(--text); border:1px solid var(--border); border-radius:10px; padding:8px 10px; font:inherit;
+  .brand-icon { 
+    width: 32px; height: 32px; background: linear-gradient(135deg, var(--brand), var(--accent)); 
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: white;
   }
-  button.primary { background: var(--brand); border-color: transparent; font-weight:600; }
-  button:disabled { opacity:.6; cursor:not-allowed; }
-  .tabs { display:flex; gap:8px; padding:10px; border-bottom:1px solid var(--border); background:#0f1627; }
-  .tab { padding:8px 10px; border:1px solid var(--border); border-radius:10px; cursor:pointer; background:#0f1627; }
-  .tab.active { background: #1b2540; border-color: var(--brand); }
-  .right-body { height: calc(100% - 92px); overflow:auto; padding:12px;}
-  .preview-wrap { border:1px solid var(--border); border-radius:12px; overflow:hidden; background:#0f1627 }
-  iframe { width:100%; height:360px; border:0; background:#0b1020 }
-  .console { background:#0b1020; padding:10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:13px; color:#d8e1f0; height:120px; overflow:auto; border-top:1px solid var(--border); }
-  .ai-row { display:flex; gap:8px; }
-  .ai-row input { flex:1; }
-  .ai-chat { display:flex; flex-direction:column; gap:10px; }
-  .msg { padding:10px; border-radius:10px; max-width:90%; }
-  .you { background:#0f2b4a; align-self:flex-end; }
-  .ai  { background:#202b45; align-self:flex-start; }
-  .hist-item { padding:8px 10px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; background:#0f1627; display:flex; justify-content:space-between; gap:8px }
-  .muted { color:var(--muted); font-size:12px }
+  .badge { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .status-indicator { display: flex; align-items: center; gap: 8px; }
+  .status-dot { 
+    width: 8px; height: 8px; border-radius: 50%; 
+    animation: pulse 2s infinite;
+  }
+  .status-dot.ok { background: var(--green); }
+  .status-dot.warn { background: var(--yellow); }
+  .status-dot.err { background: var(--red); }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  /* Main Layout */
+  .main { 
+    display: grid; 
+    grid-template-columns: 280px 1fr 440px; 
+    height: calc(100vh - 64px);
+    gap: 0;
+  }
+  .panel { 
+    border-right: 1px solid var(--border); 
+    background: rgba(11,18,32,0.8); 
+    backdrop-filter: blur(8px);
+  }
+  .panel-right { border-left: 1px solid var(--border); border-right: none; }
+
+  /* Left Panel - Files */
+  .left { padding: 16px; overflow-y: auto; }
+  .files-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .files-title { 
+    font-size: 14px; color: var(--muted); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .upload-btn {
+    background: transparent; border: 1px dashed var(--border);
+    color: var(--muted); padding: 8px 12px; border-radius: 6px;
+    cursor: pointer; font-size: 12px; transition: all 0.2s;
+  }
+  .upload-btn:hover { border-color: var(--brand); color: var(--brand); }
+  .file-item { 
+    padding: 12px; border: 1px solid var(--border); border-radius: 8px; 
+    margin-bottom: 8px; cursor: pointer; background: rgba(15,22,39,0.6);
+    transition: all 0.2s ease; position: relative; overflow: hidden;
+  }
+  .file-item::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; background: transparent; transition: all 0.2s;
+  }
+  .file-item.active { 
+    border-color: var(--brand); background: rgba(123,92,255,0.1);
+  }
+  .file-item.active::before { background: var(--brand); }
+  .file-item:hover:not(.active) { 
+    border-color: rgba(123,92,255,0.4); background: rgba(15,22,39,0.8);
+  }
+  .file-name { font-weight: 500; margin-bottom: 4px; }
+  .file-lang { color: var(--muted); font-size: 11px; text-transform: uppercase; }
+
+  /* Center Panel - Editor */
+  .editor-panel { 
+    display: grid; grid-template-rows: auto 1fr; 
+    border-right: none; background: rgba(11,18,32,0.4);
+  }
+  .editor-header {
+    display: flex; align-items: center; gap: 12px; 
+    padding: 12px 16px; border-bottom: 1px solid var(--border); 
+    background: rgba(15,22,39,0.8); backdrop-filter: blur(4px);
+  }
+  .lang-select, .editor-btn, .checkbox-wrapper {
+    background: rgba(11,18,32,0.8); color: var(--text); 
+    border: 1px solid var(--border); border-radius: 6px; 
+    padding: 8px 12px; font: inherit; transition: all 0.2s;
+  }
+  .lang-select:focus, .editor-btn:focus { 
+    outline: none; border-color: var(--brand); 
+  }
+  .editor-btn.primary { 
+    background: var(--brand); border-color: var(--brand); 
+    color: white; font-weight: 600;
+  }
+  .editor-btn.primary:hover { background: #6d4ce6; }
+  .editor-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .checkbox-wrapper {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 10px; cursor: pointer;
+  }
+  .checkbox-wrapper input { margin: 0; }
+  .file-indicator { 
+    margin-left: auto; color: var(--muted); font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .editor-container { height: 100%; position: relative; }
+
+  /* Right Panel - Tabs */
+  .right-panel { 
+    display: grid; grid-template-rows: auto 1fr; 
+    background: rgba(11,18,32,0.6);
+  }
+  .tabs { 
+    display: flex; background: rgba(15,22,39,0.9);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab { 
+    flex: 1; padding: 14px 8px; text-align: center; cursor: pointer;
+    border-bottom: 3px solid transparent; transition: all 0.2s;
+    font-size: 13px; font-weight: 500;
+  }
+  .tab.active { 
+    background: rgba(123,92,255,0.1); 
+    border-bottom-color: var(--brand); color: var(--brand);
+  }
+  .tab:hover:not(.active) { background: rgba(255,255,255,0.05); }
+
+  /* Tab Content */
+  .tab-content { 
+    height: calc(100vh - 64px - 54px); overflow-y: auto; 
+    padding: 16px;
+  }
+
+  /* Preview Tab */
+  .preview-container { 
+    border: 1px solid var(--border); border-radius: 12px; 
+    overflow: hidden; background: rgba(15,22,39,0.4);
+    height: calc(100% - 140px);
+  }
+  .preview-iframe { 
+    width: 100%; height: 70%; border: 0; 
+    background: #0b1020; display: block;
+  }
+  .console-output { 
+    background: #0a0f1a; padding: 12px; 
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace; 
+    font-size: 12px; color: #d1d9e0; height: 30%;
+    overflow-y: auto; border-top: 1px solid var(--border);
+    white-space: pre-wrap; line-height: 1.4;
+  }
+
+  /* AI Chat Tab */
+  .ai-interface { display: flex; flex-direction: column; height: 100%; gap: 16px; }
+  .chat-input-row { display: flex; gap: 10px; }
+  .chat-input { 
+    flex: 1; background: rgba(15,22,39,0.8); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px; padding: 12px;
+    font: inherit; resize: none; min-height: 44px;
+  }
+  .chat-input:focus { outline: none; border-color: var(--brand); }
+  .chat-messages { 
+    flex: 1; display: flex; flex-direction: column; gap: 12px; 
+    overflow-y: auto; max-height: calc(100vh - 200px);
+  }
+  .message { 
+    padding: 12px 16px; border-radius: 12px; max-width: 85%; 
+    line-height: 1.5; animation: fadeIn 0.3s ease;
+  }
+  .message.user { 
+    background: rgba(37,99,235,0.2); align-self: flex-end; 
+    border: 1px solid rgba(37,99,235,0.3);
+  }
+  .message.ai { 
+    background: rgba(75,85,99,0.3); align-self: flex-start;
+    border: 1px solid var(--border);
+  }
+  .message.error { 
+    background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.3);
+    align-self: flex-start;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* History Tab */
+  .history-list { display: flex; flex-direction: column; gap: 8px; }
+  .history-item { 
+    padding: 12px; border: 1px solid var(--border); border-radius: 8px; 
+    background: rgba(15,22,39,0.4); display: flex; justify-content: space-between; 
+    align-items: center; transition: all 0.2s;
+  }
+  .history-item:hover { background: rgba(15,22,39,0.7); }
+  .history-info { flex: 1; }
+  .history-time { color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+  .history-preview { font-size: 11px; color: var(--muted); opacity: 0.8; }
+  .restore-btn { 
+    background: var(--accent); color: white; border: none; 
+    padding: 6px 12px; border-radius: 6px; font-size: 12px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .restore-btn:hover { background: #1d4ed8; }
+
+  /* Utilities */
+  .loading { opacity: 0.6; pointer-events: none; }
+  .empty-state { 
+    text-align: center; color: var(--muted); padding: 40px 20px;
+    font-size: 14px; line-height: 1.6;
+  }
+  
+  /* Scrollbar Styling */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { 
+    background: rgba(156,163,175,0.3); border-radius: 3px; 
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(156,163,175,0.5); }
+
+  /* Responsive */
+  @media (max-width: 1200px) {
+    .main { grid-template-columns: 240px 1fr 380px; }
+  }
+  @media (max-width: 900px) {
+    .main { grid-template-columns: 200px 1fr 320px; }
+    .brand { font-size: 16px; }
+    .editor-header { padding: 10px 12px; gap: 8px; }
+    .tab { padding: 12px 6px; font-size: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -91,359 +281,774 @@
 <div id="root"></div>
 
 <script type="text/babel">
-const { useEffect, useRef, useState } = React;
+const { useEffect, useRef, useState, useCallback } = React;
 
 const API_BASE = window.API_BASE;
 
-// утилиты
-const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
+// Utilities
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const debounce = (func, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
+
 const extToLang = (name) => {
-  const ext = (name.split('.').pop()||'').toLowerCase();
+  const ext = (name.split('.').pop() || '').toLowerCase();
   if (ext === 'ts' || ext === 'tsx') return 'typescript';
   if (ext === 'json') return 'json';
   if (ext === 'html' || ext === 'htm') return 'html';
+  if (ext === 'css') return 'css';
+  if (ext === 'py') return 'python';
   return 'javascript';
 };
 
-// HTML-обёртка для предпросмотра
+// HTML wrapper for preview
 function buildHtmlForPreview({ language, code }) {
   if (language === 'html') {
-    // если в коде уже есть <!doctype ...> — отдадим как есть
     return code.trim().toLowerCase().includes('<!doctype') ? code : `
-<!doctype html><html><head><meta charset="utf-8"><title>Preview</title></head>
-<body>${code}</body></html>`;
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; }
+  </style>
+</head>
+<body>${code}</body>
+</html>`;
   }
 
   let js = code;
   if (language === 'typescript') {
     try {
-      js = window.ts.transpileModule(code, { compilerOptions: { target: 'ES2020', module: 'None' } }).outputText;
+      js = window.ts.transpileModule(code, { 
+        compilerOptions: { target: 'ES2020', module: 'None', jsx: 'react' } 
+      }).outputText;
     } catch (e) {
-      js = `console.error(${JSON.stringify(String(e))});`;
+      js = `console.error("TypeScript compilation error:", ${JSON.stringify(String(e))});`;
     }
   }
 
-  // Консоль внутри iframe
-  return `<!doctype html><html><head><meta charset="utf-8"><title>Preview</title>
-<style>html,body{background:#0b1020;color:#d8e1f0;font-family:ui-monospace,monospace;margin:0}
-#out{white-space:pre-wrap;padding:10px;border-top:1px solid #24304f}</style>
-</head><body>
-<div id="app"></div>
-<pre id="out"></pre>
-<script>
-(function(){
-  const out = document.getElementById('out');
-  const orig = console.log;
-  console.log = function(){ orig.apply(console, arguments);
-    out.textContent += Array.from(arguments).map(a => typeof a==='object'? JSON.stringify(a): String(a)).join(' ') + "\\n";
-  };
-})();
-</script>
-<script>
-try {
-${js}
-} catch (e) {
-  console.log('❌ Error:', e && e.message ? e.message : String(e));
-}
-</script>
-</body></html>`;
+  // Enhanced console logging inside iframe
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>JavaScript Preview</title>
+  <style>
+    html, body { 
+      background: #0b1020; color: #d8e1f0; 
+      font-family: ui-monospace, 'SF Mono', Consolas, monospace; 
+      margin: 0; padding: 20px; line-height: 1.6;
+    }
+    #app { margin-bottom: 20px; }
+    #console-output { 
+      white-space: pre-wrap; padding: 15px; 
+      border-top: 2px solid #24304f; margin-top: 20px;
+      background: rgba(0,0,0,0.3); border-radius: 8px;
+    }
+    .log-entry { margin: 4px 0; }
+    .log-error { color: #ff6b6b; }
+    .log-warn { color: #f9cc45; }
+    .log-info { color: #29d398; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="console-output"></div>
+  
+  <script>
+    (function() {
+      const output = document.getElementById('console-output');
+      const originalLog = console.log;
+      const originalError = console.error;
+      const originalWarn = console.warn;
+      
+      function addLogEntry(type, args) {
+        const entry = document.createElement('div');
+        entry.className = 'log-entry log-' + type;
+        entry.textContent = Array.from(args).map(a => 
+          typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)
+        ).join(' ');
+        output.appendChild(entry);
+        output.scrollTop = output.scrollHeight;
+      }
+      
+      console.log = function() { 
+        originalLog.apply(console, arguments);
+        addLogEntry('info', arguments);
+      };
+      console.error = function() { 
+        originalError.apply(console, arguments);
+        addLogEntry('error', arguments);
+      };
+      console.warn = function() { 
+        originalWarn.apply(console, arguments);
+        addLogEntry('warn', arguments);
+      };
+    })();
+  </script>
+  
+  <script>
+    try {
+      ${js}
+    } catch (error) {
+      console.error('Runtime Error:', error.message);
+    }
+  </script>
+</body>
+</html>`;
 }
 
-function App(){
-  const [backendOk, setBackendOk] = useState(false);
+// Main App Component
+function App() {
+  const [backendStatus, setBackendStatus] = useState('checking');
   const [files, setFiles] = useState([
-    { name: 'index.html', language: 'html', content: '<h1>Hello iCoder 🚀</h1><p>Tap RUN to render.</p>' },
-    { name: 'main.js', language: 'javascript', content: 'console.log("👋 Hello from JS!");' },
+    { 
+      name: 'welcome.html', 
+      language: 'html', 
+      content: `<div style="text-align: center; padding: 40px; font-family: system-ui;">
+  <h1 style="color: #7b5cff; margin-bottom: 20px;">🚀 Welcome to iCoder Plus</h1>
+  <p style="color: #64748b; margin-bottom: 30px;">AI-powered IDE with Monaco Editor</p>
+  <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin: 20px 0;">
+    <h3 style="color: #334155;">✨ Features</h3>
+    <ul style="text-align: left; color: #475569; margin-top: 15px;">
+      <li>Monaco Editor with syntax highlighting</li>
+      <li>Live preview for HTML/JS/TS</li>
+      <li>AI-powered code analysis and chat</li>
+      <li>Version history with restore functionality</li>
+      <li>Drag & drop file upload</li>
+      <li>Auto-run mode with smart debouncing</li>
+    </ul>
+  </div>
+  <button onclick="alert('Hello from iCoder Plus! 🎉')" 
+          style="background: #7b5cff; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">
+    Test Interactive Button
+  </button>
+</div>` 
+    },
+    { 
+      name: 'example.js', 
+      language: 'javascript', 
+      content: `// 🚀 iCoder Plus Demo
+console.log("Welcome to iCoder Plus!");
+
+// Interactive demo
+const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7'];
+let currentColor = 0;
+
+function changeBackground() {
+  document.body.style.background = \`linear-gradient(135deg, \${colors[currentColor]}, \${colors[(currentColor + 1) % colors.length]})\`;
+  currentColor = (currentColor + 1) % colors.length;
+  console.log(\`Background changed to: \${colors[currentColor]}\`);
+}
+
+// Create interactive demo
+const app = document.getElementById('app');
+if (app) {
+  app.innerHTML = \`
+    <div style="text-align: center; padding: 20px; color: white;">
+      <h2>🎨 Interactive JavaScript Demo</h2>
+      <button onclick="changeBackground()" 
+              style="padding: 15px 30px; font-size: 16px; background: rgba(255,255,255,0.2); 
+                     color: white; border: 2px solid white; border-radius: 25px; cursor: pointer; margin: 20px;">
+        Change Background Color
+      </button>
+      <p>Check the console output below! 👇</p>
+    </div>
+  \`;
+}
+
+console.log("Demo loaded! Click the button to see magic ✨");` 
+    }
   ]);
-  const [current, setCurrent] = useState(0);
-  const [lang, setLang] = useState('html');
+  const [currentFile, setCurrentFile] = useState(0);
+  const [language, setLanguage] = useState('html');
   const [autoRun, setAutoRun] = useState(true);
 
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
-  const editorDivRef = useRef(null);
+  const editorContainerRef = useRef(null);
   const iframeRef = useRef(null);
-  const [consoleText, setConsoleText] = useState('');
 
-  // AI Chat
+  // AI Chat state
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
-  const [chat, setChat] = useState([]);
+  const [chatMessages, setChatMessages] = useState([]);
 
-  // History (на уровне файла)
-  const [versions, setVersions] = useState({}); // {filename: [{ts, content}]}
+  // History state (per file)
+  const [versions, setVersions] = useState({});
 
-  // HEALTH CHECK
+  // Backend health check
   useEffect(() => {
-    (async () => {
+    let mounted = true;
+    const checkHealth = async () => {
       try {
-        const r = await fetch(`${API_BASE}/health`, { cache:'no-store' });
-        setBackendOk(r.ok);
-      } catch { setBackendOk(false); }
-    })();
+        const response = await fetch(`${API_BASE}/health`, { 
+          cache: 'no-store',
+          signal: AbortSignal.timeout(5000)
+        });
+        if (mounted) {
+          setBackendStatus(response.ok ? 'connected' : 'error');
+        }
+      } catch (error) {
+        if (mounted) {
+          setBackendStatus('error');
+        }
+      }
+    };
+    
+    checkHealth();
+    const interval = setInterval(checkHealth, 30000); // Check every 30s
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
-  // Monaco init
+  // Monaco Editor initialization
   useEffect(() => {
     let disposed = false;
-    loadMonaco().then((monaco) => {
-      if (disposed) return;
-      monacoRef.current = monaco;
-      const model = monaco.editor.createModel(files[current].content, lang);
-      editorRef.current = monaco.editor.create(editorDivRef.current, {
-        model,
-        theme: 'vs-dark',
-        minimap: { enabled:false },
-        wordWrap: 'on',
-        tabSize: 2,
-        fontSize: 14,
-        automaticLayout: true,
-      });
-      // авто-запуск
-      let tm = null;
-      editorRef.current.onDidChangeModelContent(() => {
-        const content = editorRef.current.getValue();
-        updateFileContent(content);
+    
+    const initMonaco = async () => {
+      try {
+        const monaco = await loadMonaco();
+        if (disposed) return;
+        
+        monacoRef.current = monaco;
+        const model = monaco.editor.createModel(
+          files[currentFile].content, 
+          files[currentFile].language
+        );
+        
+        editorRef.current = monaco.editor.create(editorContainerRef.current, {
+          model,
+          theme: 'vs-dark',
+          minimap: { enabled: false },
+          wordWrap: 'on',
+          tabSize: 2,
+          fontSize: 14,
+          automaticLayout: true,
+          fontFamily: 'ui-monospace, SF Mono, Consolas, monospace',
+          lineNumbers: 'on',
+          glyphMargin: false,
+          folding: true,
+          lineDecorationsWidth: 0,
+          lineNumbersMinChars: 3,
+          scrollBeyondLastLine: false,
+          smoothScrolling: true,
+        });
+
+        // Auto-run with debouncing
+        const debouncedRun = debounce(() => {
+          if (autoRun) runPreview();
+        }, 350);
+        
+        editorRef.current.onDidChangeModelContent(() => {
+          const content = editorRef.current.getValue();
+          updateCurrentFileContent(content);
+          debouncedRun();
+        });
+
+        // Initial run
         if (autoRun) {
-          clearTimeout(tm);
-          tm = setTimeout(() => runPreview(), 350);
+          await sleep(100);
+          runPreview();
         }
-      });
-      if (autoRun) runPreview();
-    });
+      } catch (error) {
+        console.error('Monaco initialization failed:', error);
+      }
+    };
+
+    initMonaco();
+
     return () => {
       disposed = true;
-      if (editorRef.current) editorRef.current.dispose();
+      if (editorRef.current) {
+        editorRef.current.dispose();
+      }
     };
-    // eslint-disable-next-line
-  }, []);
+  }, []); // Only run once
 
-  // переключение файла
-  const openFile = (idx) => {
-    setCurrent(idx);
-    const f = files[idx];
+  // File switching
+  const openFile = useCallback(async (index) => {
+    if (!monacoRef.current || !editorRef.current) return;
+    
+    setCurrentFile(index);
+    const file = files[index];
+    setLanguage(file.language);
+    
     const monaco = monacoRef.current;
-    if (!monaco || !editorRef.current) return;
-    const newModel = monaco.editor.createModel(f.content, f.language);
+    const newModel = monaco.editor.createModel(file.content, file.language);
     editorRef.current.setModel(newModel);
-    setLang(f.language);
-    if (autoRun) runPreview();
-  };
+    
+    if (autoRun) {
+      await sleep(100);
+      runPreview();
+    }
+  }, [files, autoRun]);
 
-  // смена языка
-  const changeLanguage = (newLang) => {
-    setLang(newLang);
+  // Language switching
+  const changeLanguage = useCallback((newLang) => {
+    setLanguage(newLang);
     const monaco = monacoRef.current;
+    
     if (monaco && editorRef.current) {
       monaco.editor.setModelLanguage(editorRef.current.getModel(), newLang);
     }
-    const f = files[current];
-    f.language = newLang;
-    setFiles([...files]);
-    if (autoRun) runPreview();
-  };
+    
+    // Update file language
+    const updatedFiles = [...files];
+    updatedFiles[currentFile].language = newLang;
+    setFiles(updatedFiles);
+    
+    if (autoRun) {
+      setTimeout(runPreview, 100);
+    }
+  }, [files, currentFile, autoRun]);
 
-  // обновить содержимое текущего файла
-  const updateFileContent = (content) => {
-    files[current].content = content;
-    setFiles([...files]);
-  };
+  // Update current file content
+  const updateCurrentFileContent = useCallback((content) => {
+    const updatedFiles = [...files];
+    updatedFiles[currentFile].content = content;
+    setFiles(updatedFiles);
+  }, [files, currentFile]);
 
-  // RUN
-  const runPreview = () => {
-    const f = files[current];
-    const code = editorRef.current ? editorRef.current.getValue() : f.content;
-    const doc = buildHtmlForPreview({ language: f.language, code });
+  // Run preview
+  const runPreview = useCallback(() => {
+    const file = files[currentFile];
+    const code = editorRef.current ? editorRef.current.getValue() : file.content;
+    const htmlDoc = buildHtmlForPreview({ language: file.language, code });
+    
     const iframe = iframeRef.current;
     if (!iframe) return;
-    const blob = new Blob([doc], { type: 'text/html' });
+    
+    const blob = new Blob([htmlDoc], { type: 'text/html' });
     iframe.src = URL.createObjectURL(blob);
-    // консоль iframe будет писать в свой <pre>, мы его дополнительно не читаем
-    setConsoleText(''); // можно чистить внешний лог
-  };
+  }, [files, currentFile]);
 
-  // загрузка локальных файлов
-  const onUpload = async (ev) => {
-    const list = Array.from(ev.target.files || []);
-    if (!list.length) return;
-    for (const file of list) {
-      const content = await file.text();
-      const language = extToLang(file.name);
-      files.push({ name: file.name, content, language });
+  // File upload
+  const handleFileUpload = useCallback(async (event) => {
+    const fileList = Array.from(event.target.files || []);
+    if (!fileList.length) return;
+
+    for (const file of fileList) {
+      try {
+        const content = await file.text();
+        const language = extToLang(file.name);
+        setFiles(prev => [...prev, { name: file.name, content, language }]);
+      } catch (error) {
+        console.error('File upload failed:', error);
+      }
     }
-    setFiles([...files]);
-    openFile(files.length - 1);
-    ev.target.value = '';
-  };
+    
+    // Open the last uploaded file
+    const newIndex = files.length + fileList.length - 1;
+    setTimeout(() => openFile(newIndex), 100);
+    
+    // Clear input
+    event.target.value = '';
+  }, [files, openFile]);
 
-  // сохранить версию 
-  const saveVersion = () => {
-    const f = files[current];
-    const content = editorRef.current ? editorRef.current.getValue() : f.content;
-    const key = f.name;
-    const list = versions[key] || [];
-    list.unshift({ ts: Date.now(), content });
-    const next = { ...versions, [key]: list.slice(0, 30) };
-    setVersions(next);
-  };
+  // Version management
+  const saveVersion = useCallback(() => {
+    const file = files[currentFile];
+    const content = editorRef.current ? editorRef.current.getValue() : file.content;
+    const key = file.name;
+    
+    const existingVersions = versions[key] || [];
+    const newVersion = { 
+      timestamp: Date.now(), 
+      content, 
+      preview: content.slice(0, 100) + (content.length > 100 ? '...' : '')
+    };
+    
+    const updatedVersions = {
+      ...versions,
+      [key]: [newVersion, ...existingVersions].slice(0, 20) // Keep max 20 versions
+    };
+    
+    setVersions(updatedVersions);
+  }, [files, currentFile, versions]);
 
-  // restore
-  const restoreVersion = (key, idx) => {
-    const v = (versions[key] || [])[idx];
-    if (!v) return;
-    const monaco = monacoRef.current;
-    if (monaco && editorRef.current) {
-      editorRef.current.setValue(v.content);
+  const restoreVersion = useCallback((filename, versionIndex) => {
+    const fileVersions = versions[filename];
+    if (!fileVersions || !fileVersions[versionIndex]) return;
+    
+    const version = fileVersions[versionIndex];
+    
+    if (monacoRef.current && editorRef.current) {
+      editorRef.current.setValue(version.content);
     }
-    updateFileContent(v.content);
-    if (autoRun) runPreview();
-  };
+    
+    updateCurrentFileContent(version.content);
+    
+    if (autoRun) {
+      setTimeout(runPreview, 100);
+    }
+  }, [versions, updateCurrentFileContent, autoRun, runPreview]);
 
-  // AI analyze
-  const aiAnalyze = async () => {
+  // AI Analysis
+  const performAIAnalysis = useCallback(async () => {
     try {
-      const f = files[current];
-      const code = editorRef.current ? editorRef.current.getValue() : f.content;
-      const r = await fetch(`${API_BASE}/api/ai/analyze`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ code, fileName: f.name, analysisType:'review' })
+      const file = files[currentFile];
+      const code = editorRef.current ? editorRef.current.getValue() : file.content;
+      
+      const response = await fetch(`${API_BASE}/api/ai/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          fileName: file.name,
+          analysisType: 'review'
+        })
       });
-      const j = await r.json();
-      alert(j?.data ? JSON.stringify(j.data, null, 2) : JSON.stringify(j));
-    } catch (e) {
-      alert('AI analyze failed: ' + String(e));
+      
+      const result = await response.json();
+      const analysis = result?.data || result?.error || 'Анализ не доступен';
+      
+      alert(typeof analysis === 'object' ? 
+        JSON.stringify(analysis, null, 2) : 
+        String(analysis)
+      );
+    } catch (error) {
+      alert('Ошибка AI анализа: ' + String(error));
     }
-  };
+  }, [files, currentFile]);
 
-  // AI chat
-  const sendChat = async () => {
+  // AI Chat
+  const sendChatMessage = useCallback(async () => {
     if (!aiInput.trim()) return;
-    const f = files[current];
-    const code = editorRef.current ? editorRef.current.getValue() : f.content;
-    const you = { role:'you', text: aiInput };
-    setChat(c => [...c, you]);
-    setAiInput(''); setAiLoading(true);
+    
+    const file = files[currentFile];
+    const code = editorRef.current ? editorRef.current.getValue() : file.content;
+    const userMessage = { role: 'user', text: aiInput };
+    
+    setChatMessages(prev => [...prev, userMessage]);
+    setAiInput('');
+    setAiLoading(true);
+    
     try {
-      const r = await fetch(`${API_BASE}/api/ai/chat`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ message: you.text, code, fileName: f.name })
+      const response = await fetch(`${API_BASE}/api/ai/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userMessage.text,
+          code,
+          fileName: file.name
+        })
       });
-      const j = await r.json();
-      const text = j?.data?.message || j?.error || 'No response';
-      setChat(c => [...c, { role:'ai', text }]);
-    } catch (e) {
-      setChat(c => [...c, { role:'ai', text: 'AI error: ' + String(e) }]);
+      
+      const result = await response.json();
+      const aiText = result?.data?.message || result?.error || 'Нет ответа от AI';
+      
+      setChatMessages(prev => [...prev, { role: 'ai', text: aiText }]);
+    } catch (error) {
+      setChatMessages(prev => [...prev, { 
+        role: 'error', 
+        text: 'Ошибка AI: ' + String(error) 
+      }]);
     } finally {
       setAiLoading(false);
     }
-  };
+  }, [aiInput, files, currentFile]);
 
-  const f = files[current];
-  const vlist = versions[f.name] || [];
+  const currentFileData = files[currentFile];
+  const currentVersions = versions[currentFileData.name] || [];
 
   return (
     <div className="app">
-      <div className="topbar">
-        <div className="brand">
-          <span style={{fontSize:22}}>⚡ iCoder Plus</span>
-          <span className="badge">AI-first IDE v2.0</span>
-        </div>
-        <div className="badge">
-          <span className={`status-dot ${backendOk ? 'ok' : 'warn'}`}></span>
-          Backend: {backendOk ? 'connected' : 'checking…'}
-        </div>
-      </div>
-
+      <TopBar backendStatus={backendStatus} />
       <div className="main">
-        {/* LEFT: files */}
-        <div className="panel left">
-          <div className="files-title">Files</div>
-          <input className="upload" type="file" multiple onChange={onUpload}/>
-          {files.map((fi, idx) => (
-            <div key={idx} className={`file-item ${idx===current?'active':''}`} onClick={()=>openFile(idx)}>
-              <div>{fi.name}</div>
-              <div className="muted">{fi.language}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* CENTER: editor */}
-        <div className="panel" style={{borderRight:'none', display:'grid', gridTemplateRows:'auto 1fr'}}>
-          <div className="header-row">
-            <select value={lang} onChange={e=>changeLanguage(e.target.value)}>
-              <option value="javascript">JavaScript</option>
-              <option value="typescript">TypeScript</option>
-              <option value="html">HTML</option>
-              <option value="json">JSON</option>
-            </select>
-            <button className="primary" onClick={runPreview}>▶ RUN</button>
-            <label className="chk" style={{display:'inline-flex', alignItems:'center', gap:8}}>
-              <input type="checkbox" checked={autoRun} onChange={e=>setAutoRun(e.target.checked)} />
-              Auto Run
-            </label>
-            <button onClick={saveVersion}>💾 Save Version</button>
-            <button onClick={aiAnalyze}>🧠 AI Analyze</button>
-            <div className="muted" style={{marginLeft:'auto'}}>{f.name}</div>
-          </div>
-          <div ref={editorDivRef} className="editor"></div>
-        </div>
-
-        {/* RIGHT: tabs */}
-        <RightPane
+        <LeftPanel 
+          files={files}
+          currentFile={currentFile}
+          onFileClick={openFile}
+          onFileUpload={handleFileUpload}
+        />
+        <CenterPanel
+          currentFile={currentFileData}
+          language={language}
+          onLanguageChange={changeLanguage}
+          autoRun={autoRun}
+          onAutoRunChange={setAutoRun}
+          onRun={runPreview}
+          onSaveVersion={saveVersion}
+          onAIAnalyze={performAIAnalysis}
+          editorContainerRef={editorContainerRef}
+        />
+        <RightPanel
           iframeRef={iframeRef}
-          consoleText={consoleText}
-          chat={chat}
-          setAiInput={setAiInput}
+          chatMessages={chatMessages}
           aiInput={aiInput}
           aiLoading={aiLoading}
-          sendChat={sendChat}
-          versions={vlist}
-          restore={(idx)=>restoreVersion(f.name, idx)}
+          onAiInputChange={setAiInput}
+          onSendChat={sendChatMessage}
+          versions={currentVersions}
+          onRestoreVersion={(index) => restoreVersion(currentFileData.name, index)}
         />
       </div>
     </div>
   );
 }
 
-function RightPane({ iframeRef, consoleText, chat, setAiInput, aiInput, aiLoading, sendChat, versions, restore }){
-  const [tab, setTab] = useState('preview'); // preview | chat | history
+// TopBar Component
+function TopBar({ backendStatus }) {
+  const getStatusInfo = () => {
+    switch (backendStatus) {
+      case 'connected': return { class: 'ok', text: 'подключен' };
+      case 'error': return { class: 'err', text: 'ошибка' };
+      default: return { class: 'warn', text: 'проверка...' };
+    }
+  };
+
+  const status = getStatusInfo();
+
   return (
-    <div className="panel panel-right" style={{display:'grid', gridTemplateRows:'auto auto 1fr'}}>
-      <div className="tabs">
-        <div className={`tab ${tab==='preview'?'active':''}`} onClick={()=>setTab('preview')}>▶ Live Preview</div>
-        <div className={`tab ${tab==='chat'?'active':''}`} onClick={()=>setTab('chat')}>🤖 AI Chat</div>
-        <div className={`tab ${tab==='history'?'active':''}`} onClick={()=>setTab('history')}>📝 History</div>
+    <div className="topbar">
+      <div className="brand">
+        <div className="brand-icon">⚡</div>
+        <span>iCoder Plus</span>
+        <span className="badge">AI-first IDE v2.0</span>
       </div>
-      <div className="right-body">
-        {tab==='preview' && (
-          <div className="preview-wrap">
-            <iframe ref={iframeRef} sandbox="allow-scripts allow-same-origin"></iframe>
-            <div className="console">{consoleText || 'Console output appears here…'}</div>
+      <div className="status-indicator">
+        <span className="badge">
+          <span className={`status-dot ${status.class}`}></span>
+          Бэкенд: {status.text}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// LeftPanel Component
+function LeftPanel({ files, currentFile, onFileClick, onFileUpload }) {
+  const fileInputRef = useRef(null);
+
+  return (
+    <div className="panel left">
+      <div className="files-header">
+        <div className="files-title">Файлы</div>
+        <button 
+          className="upload-btn"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          + Загрузить
+        </button>
+      </div>
+      
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        onChange={onFileUpload}
+        style={{ display: 'none' }}
+        accept=".js,.ts,.html,.css,.json,.py,.jsx,.tsx"
+      />
+      
+      <div className="files-list">
+        {files.map((file, index) => (
+          <div
+            key={index}
+            className={`file-item ${index === currentFile ? 'active' : ''}`}
+            onClick={() => onFileClick(index)}
+          >
+            <div className="file-name">{file.name}</div>
+            <div className="file-lang">{file.language}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// CenterPanel Component  
+function CenterPanel({
+  currentFile,
+  language,
+  onLanguageChange,
+  autoRun,
+  onAutoRunChange,
+  onRun,
+  onSaveVersion,
+  onAIAnalyze,
+  editorContainerRef
+}) {
+  return (
+    <div className="panel editor-panel">
+      <div className="editor-header">
+        <select 
+          className="lang-select"
+          value={language} 
+          onChange={(e) => onLanguageChange(e.target.value)}
+        >
+          <option value="javascript">JavaScript</option>
+          <option value="typescript">TypeScript</option>
+          <option value="html">HTML</option>
+          <option value="css">CSS</option>
+          <option value="json">JSON</option>
+          <option value="python">Python</option>
+        </select>
+        
+        <button className="editor-btn primary" onClick={onRun}>
+          ▶ Запуск
+        </button>
+        
+        <label className="checkbox-wrapper">
+          <input
+            type="checkbox"
+            checked={autoRun}
+            onChange={(e) => onAutoRunChange(e.target.checked)}
+          />
+          Авто-запуск
+        </label>
+        
+        <button className="editor-btn" onClick={onSaveVersion}>
+          💾 Сохранить версию
+        </button>
+        
+        <button className="editor-btn" onClick={onAIAnalyze}>
+          🧠 AI Анализ
+        </button>
+        
+        <div className="file-indicator">
+          📄 {currentFile.name}
+        </div>
+      </div>
+      
+      <div ref={editorContainerRef} className="editor-container"></div>
+    </div>
+  );
+}
+
+// RightPanel Component
+function RightPanel({
+  iframeRef,
+  chatMessages,
+  aiInput,
+  aiLoading,
+  onAiInputChange,
+  onSendChat,
+  versions,
+  onRestoreVersion
+}) {
+  const [activeTab, setActiveTab] = useState('preview');
+
+  const handleChatKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      onSendChat();
+    }
+  };
+
+  return (
+    <div className="panel panel-right right-panel">
+      <div className="tabs">
+        <div 
+          className={`tab ${activeTab === 'preview' ? 'active' : ''}`}
+          onClick={() => setActiveTab('preview')}
+        >
+          ▶ Предпросмотр
+        </div>
+        <div 
+          className={`tab ${activeTab === 'chat' ? 'active' : ''}`}
+          onClick={() => setActiveTab('chat')}
+        >
+          🤖 AI Чат
+        </div>
+        <div 
+          className={`tab ${activeTab === 'history' ? 'active' : ''}`}
+          onClick={() => setActiveTab('history')}
+        >
+          📝 История
+        </div>
+      </div>
+
+      <div className="tab-content">
+        {activeTab === 'preview' && (
+          <div className="preview-container">
+            <iframe
+              ref={iframeRef}
+              className="preview-iframe"
+              sandbox="allow-scripts allow-same-origin"
+              title="Предпросмотр кода"
+            />
+            <div className="console-output">
+              Консольный вывод появится здесь...
+            </div>
           </div>
         )}
-        {tab==='chat' && (
-          <div className="ai-chat">
-            <div className="ai-row">
-              <input placeholder="Ask AI about your code…" value={aiInput} onChange={e=>setAiInput(e.target.value)} />
-              <button className="primary" onClick={sendChat} disabled={aiLoading}>{aiLoading?'…':'Send'}</button>
+
+        {activeTab === 'chat' && (
+          <div className="ai-interface">
+            <div className="chat-input-row">
+              <textarea
+                className="chat-input"
+                placeholder="Спросите AI о вашем коде..."
+                value={aiInput}
+                onChange={(e) => onAiInputChange(e.target.value)}
+                onKeyPress={handleChatKeyPress}
+                rows={2}
+              />
+              <button
+                className="editor-btn primary"
+                onClick={onSendChat}
+                disabled={aiLoading}
+                style={{ alignSelf: 'flex-end', minWidth: '80px' }}
+              >
+                {aiLoading ? '⏳' : 'Отправить'}
+              </button>
             </div>
-            <div>
-              {chat.map((m,i)=>(
-                <div key={i} className={`msg ${m.role==='you'?'you':'ai'}`}>{m.text}</div>
-              ))}
-              {!chat.length && <div className="muted">No messages yet.</div>}
-            </div>
-          </div>
-        )}
-        {tab==='history' && (
-          <div>
-            {!versions.length && <div className="muted">No versions yet. Use "Save Version".</div>}
-            {versions.map((v,i)=>(
-              <div key={i} className="hist-item">
-                <div>
-                  <div className="muted">{new Date(v.ts).toLocaleString()}</div>
+            
+            <div className="chat-messages">
+              {chatMessages.length === 0 && (
+                <div className="empty-state">
+                  Сообщений пока нет.<br />
+                  Задайте вопрос об вашем коде!
                 </div>
-                <button onClick={()=>restore(i)}>Restore</button>
+              )}
+              {chatMessages.map((message, index) => (
+                <div key={index} className={`message ${message.role}`}>
+                  {message.text}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'history' && (
+          <div className="history-list">
+            {versions.length === 0 && (
+              <div className="empty-state">
+                Версий пока нет.<br />
+                Используйте "💾 Сохранить версию".
+              </div>
+            )}
+            {versions.map((version, index) => (
+              <div key={index} className="history-item">
+                <div className="history-info">
+                  <div className="history-time">
+                    {new Date(version.timestamp).toLocaleString('ru-RU')}
+                  </div>
+                  <div className="history-preview">
+                    {version.preview}
+                  </div>
+                </div>
+                <button
+                  className="restore-btn"
+                  onClick={() => onRestoreVersion(index)}
+                >
+                  Восстановить
+                </button>
               </div>
             ))}
           </div>
@@ -452,8 +1057,3 @@ function RightPane({ iframeRef, consoleText, chat, setAiInput, aiInput, aiLoadin
     </div>
   );
 }
-
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-</script>
-</body>
-</html>

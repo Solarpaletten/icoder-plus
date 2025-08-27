@@ -1,120 +1,174 @@
-import { useState, useEffect } from 'react'
-import BackendStatus from './components/BackendStatus'
+import React, { useEffect, useMemo, useState } from "react";
 
-function App() {
-  const [isLoading, setIsLoading] = useState(true)
+const apiBase =
+  import.meta.env.VITE_API_URL?.replace(/\/$/, "") ||
+  (typeof window !== "undefined" && window.API_BASE) ||
+  "";
+
+export default function App() {
+  const [health, setHealth] = useState(null);
+  const [checking, setChecking] = useState(false);
+  const [fixing, setFixing] = useState(false);
+  const [chat, setChat] = useState({ q: "", a: "" });
+  const reachable = useMemo(() => Boolean(apiBase), []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 1000)
-    
-    return () => clearTimeout(timer)
-  }, [])
+    if (!reachable) return;
+    (async () => {
+      setChecking(true);
+      try {
+        const res = await fetch(`${apiBase}/health`, { cache: "no-store" });
+        const json = await res.json();
+        setHealth({ ok: res.ok, data: json });
+      } catch (e) {
+        setHealth({ ok: false, data: { error: String(e) } });
+      } finally {
+        setChecking(false);
+      }
+    })();
+  }, [reachable]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center text-white">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold">Loading iCoder Plus...</h2>
-          <p className="text-gray-400 mt-2">AI-first IDE</p>
-        </div>
-      </div>
-    )
+  async function runFix() {
+    setFixing(true);
+    try {
+      const res = await fetch(`${apiBase}/api/ai/fix/apply`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          fileName: "demo.js",
+          code: "var message = 'Hello iCoder Plus'; console.log(message);",
+        }),
+      });
+      const json = await res.json();
+      const fixed = json?.data?.fixedCode ?? "(no result)";
+      alert("AI Fix result:\n\n" + fixed);
+    } catch (e) {
+      alert("Fix error: " + e);
+    } finally {
+      setFixing(false);
+    }
+  }
+
+  async function askChat() {
+    const q = chat.q.trim();
+    if (!q) return;
+    try {
+      const res = await fetch(`${apiBase}/api/ai/chat`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          message: q,
+          fileName: "App.jsx",
+          code: "function greet(){ return 'Hello'; }",
+        }),
+      });
+      const json = await res.json();
+      setChat((s) => ({ ...s, a: json?.response || json?.data?.message || "No reply" }));
+    } catch (e) {
+      setChat((s) => ({ ...s, a: "Error: " + e }));
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">iC</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">iCoder Plus</h1>
-                <p className="text-sm text-gray-400">AI-first IDE v2.0</p>
-              </div>
+    <div className="container">
+      <div className="badge">AI-first IDE v2.0</div>
+      <div className="h1">Welcome to the Future of Coding 🚀</div>
+      <div className="sub">Full-stack on Render • Backend: {apiBase || "– not set –"}</div>
+
+      <div className="grid">
+        <div className="card">
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <div className="kv">
+              <div className="dot" style={{ background: "#29d398" }} />
+              <strong>Frontend</strong>
             </div>
-            <div className="bg-green-800 px-3 py-1 rounded-full text-sm">
-              ✅ Frontend on Render
+            <span className="small">Live & running</span>
+          </div>
+          <hr />
+          <div className="small">This is the React app deployed on Render Static Site.</div>
+        </div>
+
+        <div className="card">
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <div className="kv">
+              <div
+                className="dot"
+                style={{ background: checking ? "#f9cc45" : health?.ok ? "#29d398" : "#ff6b6b" }}
+              />
+              <strong>Backend</strong>
             </div>
+            <span className="small">
+              {checking ? "Checking…" : health?.ok ? "Connected" : "Not reachable"}
+            </span>
+          </div>
+          <hr />
+          <div className="code" style={{ maxHeight: 140 }}>
+            {checking && "fetching /health …"}
+            {!checking && health && JSON.stringify(health.data, null, 2)}
+            {!checking && !health && "—"}
+          </div>
+          <div style={{ marginTop: 12 }} className="small">
+            Health: <code>{apiBase ? `${apiBase}/health` : "—"}</code>
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        {/* Welcome */}
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold mb-4">Welcome to iCoder Plus! 🚀</h2>
-          <p className="text-gray-300 text-lg">Your AI-first IDE is now running on Render</p>
+      <div className="card" style={{ marginTop: 18 }}>
+        <div className="row" style={{ justifyContent: "space-between" }}>
+          <strong>Quick Actions</strong>
+          <button className="btn" onClick={runFix} disabled={!reachable || fixing}>
+            {fixing ? "Applying…" : "🤖 Apply AI Fix"}
+          </button>
         </div>
+        <hr />
+        <div className="row" style={{ gap: 8 }}>
+          <input
+            placeholder="Ask AI about your code…"
+            value={chat.q}
+            onChange={(e) => setChat((s) => ({ ...s, q: e.target.value }))}
+            style={{
+              flex: 1,
+              background: "#0b1120",
+              color: "white",
+              border: "1px solid rgba(255,255,255,.08)",
+              borderRadius: 10,
+              padding: "10px 12px",
+              outline: "none",
+            }}
+          />
+          <button className="btn" onClick={askChat} disabled={!reachable}>
+            💬 Ask
+          </button>
+        </div>
+        {chat.a && (
+          <>
+            <hr />
+            <div className="code">{chat.a}</div>
+          </>
+        )}
+      </div>
 
-        {/* Backend Status */}
-        <div className="mb-8">
-          <BackendStatus />
+      <div className="card" style={{ marginTop: 18 }}>
+        <strong>Endpoints</strong>
+        <hr />
+        <div className="small">
+          <div>Health: <code>{apiBase}/health</code></div>
+          <div>AI Analyze: <code>{apiBase}/api/ai/analyze</code></div>
+          <div>AI Fix: <code>{apiBase}/api/ai/fix/apply</code></div>
+          <div>AI Chat: <code>{apiBase}/api/ai/chat</code></div>
         </div>
+      </div>
 
-        {/* Features */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <FeatureCard 
-            icon="🤖"
-            title="AI Analysis" 
-            description="Smart code reviews powered by OpenAI"
-          />
-          <FeatureCard 
-            icon="💬"
-            title="AI Chat"
-            description="Chat with AI about your code"
-          />
-          <FeatureCard 
-            icon="🔧" 
-            title="Auto Fix"
-            description="Automatically fix coding issues"
-          />
-          <FeatureCard 
-            icon="📝"
-            title="Code Editor"
-            description="Monaco editor with syntax highlighting"
-          />
-          <FeatureCard 
-            icon="📊"
-            title="Live Preview"
-            description="See your changes in real-time"
-          />
-          <FeatureCard 
-            icon="🌐"
-            title="Cloud Ready"
-            description="Deployed on Render with 99.9% uptime"
-          />
+      <div className="card" style={{ marginTop: 18 }}>
+        <strong>🚀 Deployment Status</strong>
+        <hr />
+        <div className="small">
+          <div>✅ Frontend: Render Static Site</div>
+          <div>✅ Backend: Render Web Service</div>
+          <div>✅ API Connection: {health?.ok ? "Active" : "Testing..."}</div>
+          <div>⚡ Version: 2.0.0</div>
         </div>
-
-        {/* Footer */}
-        <div className="text-center mt-12 pt-8 border-t border-gray-700">
-          <p className="text-gray-400 mb-2">
-            Backend API: <span className="text-blue-400">https://icoder-plus.onrender.com</span>
-          </p>
-          <p className="text-sm text-gray-500">
-            Built with ❤️ by Solar IT Team
-          </p>
-        </div>
-      </main>
+      </div>
     </div>
-  )
+  );
 }
-
-function FeatureCard({ icon, title, description }) {
-  return (
-    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 hover:border-blue-500 transition-all duration-200">
-      <div className="text-3xl mb-4">{icon}</div>
-      <h3 className="text-lg font-semibold mb-2">{title}</h3>
-      <p className="text-gray-400 text-sm">{description}</p>
-    </div>
-  )
-}
-
-export default App

@@ -1,29 +1,6 @@
-cat > fix_dist_issue.sh << 'EOF'
-#!/bin/bash
-
-echo "Исправляем проблему с dist директорией"
-
 cd frontend
-
-# Создать правильную команду сборки
-cat > package.json << 'JSON'
-{
-  "name": "icoder-plus-frontend-static",
-  "version": "2.0.0",
-  "scripts": {
-    "build": "echo 'Static build complete'",
-    "start": "echo 'Static site ready'"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  }
-}
-JSON
-
-# Убедиться что dist/index.html существует
-if [ ! -f "dist/index.html" ]; then
-    mkdir -p dist
-    cat > dist/index.html << 'HTML'
+mkdir -p dist
+cat > dist/index.html << 'EOF'
 <!doctype html>
 <html lang="en">
   <head>
@@ -40,16 +17,12 @@ if [ ! -f "dist/index.html" ]; then
         color: white; min-height: 100vh;
       }
       .container { max-width: 800px; margin: 0 auto; }
-      .badge { background: rgba(123,92,255,.12); color: #c9b8ff; padding: 6px 10px; border-radius: 999px; font-size: 12px; }
       .title { font-size: 40px; font-weight: 800; margin: 20px 0; }
       .card { background: #121a2a; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 18px; margin: 18px 0; }
-      .btn { background: linear-gradient(135deg, #7b5cff, #4f46e5); color: white; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-weight: 700; }
-      .code { background: #0b1120; padding: 12px; border-radius: 8px; font-family: monospace; color: #cde1ff; font-size: 12px; white-space: pre-wrap; }
       .status { display: flex; align-items: center; gap: 8px; margin: 12px 0; }
       .dot { width: 8px; height: 8px; border-radius: 50%; }
       .green { background: #29d398; }
-      .yellow { background: #f9cc45; }
-      .red { background: #ff6b6b; }
+      .code { background: #0b1120; padding: 12px; border-radius: 8px; font-family: monospace; color: #cde1ff; font-size: 12px; }
     </style>
   </head>
   <body>
@@ -60,46 +33,30 @@ if [ ! -f "dist/index.html" ]; then
       
       function App() {
         const [health, setHealth] = useState(null);
-        const [checking, setChecking] = useState(false);
         
         useEffect(() => {
-          setChecking(true);
-          fetch(`${window.API_BASE}/health`)
+          fetch(window.API_BASE + '/health')
             .then(res => res.json())
             .then(data => setHealth({ ok: true, data }))
-            .catch(e => setHealth({ ok: false, data: { error: e.message }}))
-            .finally(() => setChecking(false));
+            .catch(e => setHealth({ ok: false, data: { error: e.message }}));
         }, []);
         
         return (
           <div className="container">
-            <div className="badge">AI-first IDE v2.0</div>
-            <div className="title">iCoder Plus Frontend Live</div>
-            
+            <div className="title">iCoder Plus Live</div>
             <div className="card">
               <div className="status">
                 <div className="dot green"></div>
-                <strong>Frontend Status: Live and running</strong>
+                <strong>Frontend: Running</strong>
               </div>
-              <p>Static site deployed successfully on Render</p>
             </div>
-            
             <div className="card">
               <div className="status">
-                <div className={`dot ${checking ? 'yellow' : health?.ok ? 'green' : 'red'}`}></div>
-                <strong>Backend Status: {checking ? 'Checking...' : health?.ok ? 'Connected' : 'Error'}</strong>
+                <div className={`dot ${health?.ok ? 'green' : 'red'}`}></div>
+                <strong>Backend: {health?.ok ? 'Connected' : 'Error'}</strong>
               </div>
               <div className="code">
-                {checking ? 'Connecting to backend...' : health ? JSON.stringify(health.data, null, 2) : 'No data'}
-              </div>
-            </div>
-            
-            <div className="card">
-              <strong>API Endpoints:</strong>
-              <div style={{marginTop: 12, fontSize: 14}}>
-                <div>• Health: {window.API_BASE}/health</div>
-                <div>• AI Fix: {window.API_BASE}/api/ai/fix/apply</div>
-                <div>• AI Chat: {window.API_BASE}/api/ai/chat</div>
+                {health ? JSON.stringify(health.data, null, 2) : 'Loading...'}
               </div>
             </div>
           </div>
@@ -110,14 +67,7 @@ if [ ! -f "dist/index.html" ]; then
     </script>
   </body>
 </html>
-HTML
-fi
-
-echo "dist/index.html готов"
-ls -la dist/
-
-cd ..
 EOF
 
-chmod +x fix_dist_issue.sh
-./fix_dist_issue.sh
+ls -la dist/
+cd ..

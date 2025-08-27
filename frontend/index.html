@@ -1,14 +1,63 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>iCoder Plus - AI-first IDE</title>
-    <meta name="description" content="AI-first IDE in a bottom sheet. Code, analyze, and improve with AI assistance." />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-4">🚀 iCoder Plus</h1>
+            <p class="text-xl text-gray-300">AI-first IDE is now live!</p>
+        </div>
+        
+        <div id="backend-status" class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h3 class="text-lg font-semibold mb-4">Backend Status</h3>
+            <div id="status-indicator" class="flex items-center space-x-2 mb-4">
+                <span class="text-xl">🔄</span>
+                <span class="text-yellow-400">Checking connection...</span>
+            </div>
+            <div id="backend-info" class="text-sm text-gray-400"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://icoder-plus.onrender.com';
+        
+        async function checkBackend() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                document.getElementById('status-indicator').innerHTML = `
+                    <span class="text-xl">✅</span>
+                    <span class="text-green-400">Backend Connected</span>
+                `;
+                
+                document.getElementById('backend-info').innerHTML = `
+                    Version: ${data.version}<br>
+                    Environment: ${data.environment}<br>
+                    Status: ${data.status}<br>
+                    API URL: ${API_URL}
+                `;
+                
+            } catch (error) {
+                document.getElementById('status-indicator').innerHTML = `
+                    <span class="text-xl">❌</span>
+                    <span class="text-red-400">Connection Error</span>
+                `;
+                
+                document.getElementById('backend-info').innerHTML = `
+                    Error: ${error.message}<br>
+                    API URL: ${API_URL}
+                `;
+            }
+        }
+        
+        // Check backend on load
+        checkBackend();
+    </script>
+</body>
 </html>

@@ -1,8 +1,13 @@
 import axios from 'axios'
 
+// API Base URL - автоматически определяется из environment variables
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://icoder-plus.onrender.com'
+
+console.log('🔗 API Base URL:', API_BASE_URL)
+
 // Create axios instance with default config
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: API_BASE_URL,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json'
@@ -12,17 +17,11 @@ const apiClient = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
-    // Add API key if available
-    const apiKey = import.meta.env.VITE_API_KEY
-    if (apiKey) {
-      config.headers['X-API-Key'] = apiKey
-    }
-    
     // Log request in development
     if (import.meta.env.DEV) {
-      console.log('API Request:', {
+      console.log('🚀 API Request:', {
         method: config.method?.toUpperCase(),
-        url: config.url,
+        url: `${config.baseURL}${config.url}`,
         data: config.data
       })
     }
@@ -30,6 +29,7 @@ apiClient.interceptors.request.use(
     return config
   },
   (error) => {
+    console.error('❌ Request Error:', error)
     return Promise.reject(error)
   }
 )
@@ -39,7 +39,7 @@ apiClient.interceptors.response.use(
   (response) => {
     // Log response in development
     if (import.meta.env.DEV) {
-      console.log('API Response:', {
+      console.log('✅ API Response:', {
         status: response.status,
         url: response.config.url,
         data: response.data
@@ -55,24 +55,24 @@ apiClient.interceptors.response.use(
       
       switch (status) {
         case 401:
-          console.error('Unauthorized: Check your API key')
+          console.error('🔐 Unauthorized: Check your API key')
           break
         case 403:
-          console.error('Forbidden: Insufficient permissions')
+          console.error('🚫 Forbidden: Insufficient permissions')
           break
         case 429:
-          console.error('Rate limited: Too many requests')
+          console.error('🐌 Rate limited: Too many requests')
           break
         case 500:
-          console.error('Server error: Please try again later')
+          console.error('💥 Server error: Please try again later')
           break
         default:
-          console.error('API Error:', data?.message || error.message)
+          console.error('⚠️ API Error:', data?.message || error.message)
       }
     } else if (error.request) {
-      console.error('Network error: Unable to reach server')
+      console.error('🌐 Network error: Unable to reach server at', API_BASE_URL)
     } else {
-      console.error('Request error:', error.message)
+      console.error('❌ Request error:', error.message)
     }
     
     return Promise.reject(error)
@@ -83,7 +83,7 @@ apiClient.interceptors.response.use(
 export const aiAPI = {
   // Analyze code with AI
   analyze: async (code, fileName, analysisType = 'review', oldCode = null) => {
-    const response = await apiClient.post('/ai/analyze', {
+    const response = await apiClient.post('/api/ai/analyze', {
       code,
       fileName,
       analysisType,
@@ -93,98 +93,43 @@ export const aiAPI = {
   },
 
   // Chat with AI
-  chat: async (message, code = null, fileName = null, conversationId = null) => {
-    const response = await apiClient.post('/ai/chat', {
+  chat: async (message, code = null, fileName = null) => {
+    const response = await apiClient.post('/api/ai/chat', {
       message,
       code,
-      fileName,
-      conversationId
+      fileName
     })
     return response.data
   },
 
   // Apply AI fixes
   applyFix: async (code, fileName) => {
-    const response = await apiClient.post('/ai/fix/apply', {
+    const response = await apiClient.post('/api/ai/fix/apply', {
       code,
       fileName
     })
     return response.data
-  },
+  }
+}
 
-  // Get AI service status
-  getStatus: async () => {
-    const response = await apiClient.get('/ai/status')
+// Health check
+export const healthAPI = {
+  check: async () => {
+    const response = await apiClient.get('/health')
     return response.data
   }
 }
 
-// Files Service API calls
-export const filesAPI = {
-  // Upload and process file
-  upload: async (file, content) => {
-    const response = await apiClient.post('/files/upload', {
-      fileName: file.name,
-      content,
-      size: file.size,
-      type: file.type
-    })
-    return response.data
-  },
-
-  // Generate diff between versions
-  diff: async (oldContent, newContent, fileName) => {
-    const response = await apiClient.post('/files/diff', {
-      oldContent,
-      newContent,
-      fileName
-    })
-    return response.data
+// Test connection
+export const testConnection = async () => {
+  try {
+    const response = await apiClient.get('/')
+    console.log('✅ Backend connection successful:', response.data)
+    return true
+  } catch (error) {
+    console.error('❌ Backend connection failed:', error.message)
+    return false
   }
-}
-
-// History Service API calls
-export const historyAPI = {
-  // Save version to history
-  saveVersion: async (fileName, version, content, metadata = {}) => {
-    const response = await apiClient.post('/history/save', {
-      fileName,
-      version,
-      content,
-      metadata
-    })
-    return response.data
-  },
-
-  // Get file history
-  getHistory: async (fileName) => {
-    const response = await apiClient.get(`/history/${encodeURIComponent(fileName)}`)
-    return response.data
-  },
-
-  // Export history as JSON
-  export: async (fileNames = []) => {
-    const response = await apiClient.post('/history/export', {
-      fileNames
-    })
-    return response.data
-  },
-
-  // Import history from JSON
-  import: async (historyData) => {
-    const response = await apiClient.post('/history/import', {
-      historyData
-    })
-    return response.data
-  }
-}
-
-// Generic API helper
-export const api = {
-  get: (url, params = {}) => apiClient.get(url, { params }),
-  post: (url, data = {}) => apiClient.post(url, data),
-  put: (url, data = {}) => apiClient.put(url, data),
-  delete: (url) => apiClient.delete(url)
 }
 
 export default apiClient

@@ -20,7 +20,7 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: process.env.NODE_ENV === 'production' 
-          ? 'https://icoder-plus-backend.vercel.app' 
+          ? 'https://icoder-plus.onrender.com' 
           : 'http://localhost:3000',
         changeOrigin: true,
         secure: false
@@ -29,7 +29,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: false, // Отключаем sourcemap для production
+    sourcemap: false,
     minify: 'terser',
     rollupOptions: {
       output: {
@@ -62,7 +62,7 @@ export default defineConfig({
     ]
   },
   define: {
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '2.0.0'),
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV)
   }
 })

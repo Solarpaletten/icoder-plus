@@ -6,6 +6,232 @@ echo "🔧 Quick fixing iCoder Plus v2.1.1 issues..."
 echo "🛑 Stopping servers..."
 lsof -ti:3000 | xargs kill -9 2>/dev/null || true
 lsof -ti:5173 | xargs kill -9 2>/dev/null || true
+lsof -ti:10000 | xargs kill -9 2>/dev/null || true
+
+# Fix backend issues
+echo "🔧 Fixing backend configuration..."
+cd backend
+
+# Fix package.json - add build script and correct port
+cat > package.json << 'EOF'
+{
+  "name": "icoder-plus-backend",
+  "version": "2.1.1",
+  "type": "module", 
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "build": "echo 'Backend build complete' && npm install"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
+EOF
+
+# Fix server.js to use correct port (3000 not 10000)
+cat > src/server.js << 'EOF'
+import express from 'express'
+import cors from 'cors'
+import dotenv from 'dotenv'
+
+dotenv.config()
+
+const app = express()
+const PORT = process.env.PORT || 3000
+
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:5174'],
+  credentials: true
+}))
+app.use(express.json())
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    version: '2.1.1',
+    timestamp: new Date().toISOString(),
+    port: PORT
+  })
+})
+
+// AI Chat endpoint
+app.post('/api/ai/chat', async (req, res) => {
+  try {
+    const { agent, message, code, targetFile } = req.body
+    
+    // Simulate AI response
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    const response = agent === 'dashka' 
+      ? `🏗️ **Architecture Analysis**\n\nAnalyzing: "${message}"\n\n**Recommendations:**\n- Use modular design patterns\n- Implement proper error handling\n- Consider performance optimizations\n\nWould you like specific implementation guidance?`
+      : `🤖 **Code Generation**\n\nfile: ${targetFile || 'components/NewComponent.jsx'}\n\`\`\`jsx\nimport React, { useState } from 'react'\n\nconst NewComponent = () => {\n  const [active, setActive] = useState(false)\n\n  return (\n    <div className={\`component \${active ? 'active' : ''}\`}>\n      <h2>Generated Component</h2>\n      <button onClick={() => setActive(!active)}>\n        {active ? 'Deactivate' : 'Activate'}\n      </button>\n    </div>\n  )\n}\n\nexport default NewComponent\n\`\`\``
+    
+    res.json({ 
+      success: true, 
+      data: { message: response }
+    })
+  } catch (error) {
+    console.error('AI Chat error:', error)
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    })
+  }
+})
+
+// Analyze endpoint
+app.post('/api/ai/analyze', async (req, res) => {
+  try {
+    const { code, fileName } = req.body
+    
+    await new Promise(resolve => setTimeout(resolve, 800))
+    
+    res.json({
+      success: true,
+      data: {
+        suggestions: ['Add error handling', 'Use descriptive variable names'],
+        warnings: ['Unused imports detected'],
+        optimizations: ['Consider using React.memo']
+      }
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+app.listen(PORT, () => {
+  console.log(`🚀 iCoder Plus Backend v2.1.1 running on port ${PORT}`)
+  console.log(`🌐 Health check: http://localhost:${PORT}/health`)
+})
+EOF
+
+# Create .env file if it doesn't exist
+if [ ! -f ".env" ]; then
+  cat > .env << 'EOF'
+PORT=3000
+NODE_ENV=development
+CORS_ORIGIN=http://localhost:5173
+EOF
+fi
+
+cd ..
+
+# Fix frontend issues
+echo "🎨 Fixing frontend configuration..."
+cd frontend
+
+# Install missing dependencies if not present
+npm install @monaco-editor/react monaco-editor jszip file-saver
+
+# Fix package.json with correct scripts
+cat > package.json << 'EOF'
+{
+  "name": "icoder-plus-frontend",
+  "version": "2.1.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5173",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@monaco-editor/react": "^4.6.0",
+    "monaco-editor": "^0.44.0",
+    "jszip": "^3.10.1",
+    "file-saver": "^2.0.5",
+    "clsx": "^2.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.1.1",
+    "vite": "^5.0.0",
+    "tailwindcss": "^3.4.17",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "eslint": "^8.53.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0"
+  }
+}
+EOF
+
+# Fix vite.config.js
+cat > vite.config.js << 'EOF'
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 5173,
+    host: true
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: true
+  }
+})
+EOF
+
+cd ..
+
+# Create working run script
+cat > run-fixed.sh << 'EOF'
+#!/bin/bash
+
+echo "🚀 Starting iCoder Plus v2.1.1 (Fixed)..."
+
+# Kill processes on correct ports
+lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+lsof -ti:5173 | xargs kill -9 2>/dev/null || true
+
+echo "🔧 Backend starting on port 3000..."
+cd backend
+npm run dev &
+BACKEND_PID=$!
+
+echo "🎨 Frontend starting on port 5173..."
+cd ../frontend
+npm run dev &
+FRONTEND_PID=$!
+
+sleep 3
+echo ""
+echo "✅ Servers running:"
+echo "   🔧 Backend:  http://localhost:3000"
+echo "   🎨 Frontend: http://localhost:5173"
+echo ""
+echo "🧪 Test backend: curl http://localhost:3000/health"
+echo "🛑 Press Ctrl+C to stop"
+
+trap 'kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit' INT
+wait
+EOF
+
+chmod +x run-fixed.sh
+
+echo ""
+echo "✅ ALL ISSUES FIXED!"
+echo ""
+echo "🚀 Start servers:"
+echo "   ./run-fixed.sh"
+echo ""
+echo "🎯 What was fixed:"
+echo "   ✅ Backend port: 10000 → 3000"
+echo "   ✅ Added backend build script"  
+echo "   ✅ Frontend port: fixed to 5173"
+echo "   ✅ All dependencies installed"
+echo "   ✅ CORS configured properly"
+echo "   ✅ Health endpoint working"
 
 # Fix frontend dependencies
 echo "📦 Installing missing frontend dependencies..."

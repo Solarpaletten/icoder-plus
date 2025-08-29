@@ -15,11 +15,7 @@ app.use(helmet({
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? true : [
-    'http://localhost:5173', 
-    'http://localhost:5174', 
-    'http://127.0.0.1:5173'
-  ],
+  origin: process.env.NODE_ENV === 'production' ? true : ['http://localhost:5173','http://localhost:5174','http://127.0.0.1:5173','https://icoder-solar.onrender.com'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: false

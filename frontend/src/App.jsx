@@ -1,161 +1,201 @@
-import React, { useState, useEffect } from 'react'
-import FileTree from './components/FileTree'
-import Editor from './components/Editor'
-import RightPanel from './components/RightPanel'
-import ContextMenu from './components/ContextMenu'
-import ExportProgress from './components/ExportProgress'
-import { useFileManager } from './hooks/useFileManager'
-import { useDualAgent } from './hooks/useDualAgent'
-import { exportService } from './services/exportService'
+import React, { useState } from 'react'
+import { 
+  PanelLeft, 
+  Terminal as TerminalIcon, 
+  Play, 
+  MessageSquare,
+  X,
+  Menu,
+  FileText,
+  Settings
+} from 'lucide-react'
+import './App.css'
 
 function App() {
-  const {
-    fileTree,
-    openTabs,
-    activeTab,
-    searchQuery,
-    setSearchQuery,
-    createFile,
-    createFolder,
-    renameItem,
-    deleteItem,
-    openFile,
-    closeTab,
-    toggleFolder,
-    updateFileContent
-  } = useFileManager()
-
-  const {
-    agent,
-    setAgent,
-    targetFile,
-    setTargetFile,
-    proposals,
-    setProposals,
-    chatInput,
-    setChatInput,
-    aiLoading,
-    sendChatMessage,
-    applyProposal
-  } = useDualAgent({ activeTab, fileTree, updateFileContent, createFile })
-
-  const [rightPanel, setRightPanel] = useState('ai-chat')
-  const [contextMenu, setContextMenu] = useState(null)
-  const [exportProgress, setExportProgress] = useState(null)
-
-  // Handle export
-  const handleExport = async () => {
-    await exportService.exportAsZip(fileTree, setExportProgress)
-  }
-
-  // Handle context menu
-  const handleRightClick = (e, item) => {
-    e.preventDefault()
-    setContextMenu({ x: e.pageX, y: e.pageY, item })
-  }
-
-  const handleContextAction = (action, item) => {
-    setContextMenu(null)
-    
-    switch (action) {
-      case 'add-file':
-        const fileName = prompt('Enter file name:')
-        if (fileName) createFile(item.id, fileName)
-        break
-      case 'add-folder':
-        const folderName = prompt('Enter folder name:')
-        if (folderName) createFolder(item.id, folderName)
-        break
-      case 'rename':
-        const newName = prompt('Enter new name:', item.name)
-        if (newName && newName !== item.name) renameItem(item, newName)
-        break
-      case 'delete':
-        if (confirm(`Delete "${item.name}"?`)) deleteItem(item)
-        break
-      case 'run-preview':
-        if (item.name.endsWith('.html')) setRightPanel('preview')
-        break
-    }
-  }
-
-  // Hide context menu on click
-  useEffect(() => {
-    const handleClick = () => setContextMenu(null)
-    document.addEventListener('click', handleClick)
-    return () => document.removeEventListener('click', handleClick)
-  }, [])
+  const [leftPanelOpen, setLeftPanelOpen] = useState(true)
+  const [rightPanelOpen, setRightPanelOpen] = useState(false)
+  const [terminalOpen, setTerminalOpen] = useState(false)
+  const [activeAgent, setActiveAgent] = useState('dashka')
 
   return (
-    <div className="app">
-      {/* Top Bar */}
-      <header className="topbar">
-        <div className="brand">
-          <span className="text-xl font-semibold">⚡ iCoder Plus v2.1.1</span>
-          <span className="badge">Dual-Agent AI IDE</span>
+    <div className="ide-container">
+      {/* Topbar */}
+      <header className="ide-topbar">
+        <div className="topbar-left">
+          <button 
+            className="panel-toggle"
+            onClick={() => setLeftPanelOpen(!leftPanelOpen)}
+            title="Toggle File Explorer"
+          >
+            <Menu size={16} />
+          </button>
+          <div className="project-info">
+            <span className="project-name">iCoder Plus v2.2</span>
+            <span className="project-status">IDE Shell</span>
+          </div>
         </div>
         
-        <div className="dual-agent-indicator">
-          <div className={`agent-dot ${agent}`}></div>
-          <span>Active: {agent === 'dashka' ? 'Dashka (Architect)' : 'Claudy (Code Gen)'}</span>
+        <div className="topbar-center">
+          <span className="breadcrumb">Welcome.js</span>
+        </div>
+        
+        <div className="topbar-right">
+          <div className="agent-indicator">
+            <div className={`agent-dot ${activeAgent}`}></div>
+            <span>
+              {activeAgent === 'dashka' ? 'Dashka (Architect)' : 'Claudy (Code Gen)'}
+            </span>
+          </div>
+          <button 
+            className="panel-toggle"
+            onClick={() => setRightPanelOpen(!rightPanelOpen)}
+            title="Toggle AI Panel"
+          >
+            <MessageSquare size={16} />
+          </button>
         </div>
       </header>
 
-      <main className="main">
-        {/* File Tree */}
-        <FileTree
-          fileTree={fileTree}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          openFile={openFile}
-          toggleFolder={toggleFolder}
-          onRightClick={handleRightClick}
-          onExport={handleExport}
-          selectedFileId={activeTab?.id}
-        />
+      {/* Main Layout */}
+      <div className="ide-main">
+        {/* Left Sidebar - File Explorer */}
+        {leftPanelOpen && (
+          <aside className="left-panel">
+            <div className="panel-header">
+              <span>EXPLORER</span>
+              <button onClick={() => setLeftPanelOpen(false)}>
+                <X size={14} />
+              </button>
+            </div>
+            <div className="file-explorer-placeholder">
+              <div className="folder-item">
+                <span>📁 src</span>
+              </div>
+              <div className="file-item">
+                <span>📄 App.jsx</span>
+              </div>
+              <div className="file-item">
+                <span>📄 index.js</span>
+              </div>
+              <div className="folder-item">
+                <span>📁 components</span>
+              </div>
+            </div>
+          </aside>
+        )}
 
-        {/* Editor Area */}
-        <Editor
-          openTabs={openTabs}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          closeTab={closeTab}
-          updateFileContent={updateFileContent}
-          setRightPanel={setRightPanel}
-        />
+        {/* Center - Editor Area */}
+        <main className="editor-area">
+          <div className="editor-tabs">
+            <div className="tab active">
+              <FileText size={14} />
+              <span>Welcome.js</span>
+              <button className="tab-close">
+                <X size={12} />
+              </button>
+            </div>
+            <div className="tab">
+              <FileText size={14} />
+              <span>App.jsx</span>
+              <button className="tab-close">
+                <X size={12} />
+              </button>
+            </div>
+          </div>
+          
+          <div className="editor-content">
+            <div className="editor-placeholder">
+              <div className="welcome-message">
+                <h2>🚀 iCoder Plus v2.2 - IDE Shell</h2>
+                <p>Minimalist Visual IDE - Monaco Editor will be here</p>
+                <div className="placeholder-code">
+                  <pre>{`// Welcome to iCoder Plus IDE Shell
+console.log('Hello from IDE!');
 
-        {/* Right Panel */}
-        <RightPanel
-          activePanel={rightPanel}
-          setActivePanel={setRightPanel}
-          agent={agent}
-          setAgent={setAgent}
-          targetFile={targetFile}
-          setTargetFile={setTargetFile}
-          proposals={proposals}
-          setProposals={setProposals}
-          chatInput={chatInput}
-          setChatInput={setChatInput}
-          aiLoading={aiLoading}
-          sendChatMessage={sendChatMessage}
-          applyProposal={applyProposal}
-          activeTab={activeTab}
-          fileTree={fileTree}
-        />
-      </main>
+function initIDE() {
+  return {
+    fileTree: true,
+    editor: 'monaco',
+    terminal: true,
+    aiAgent: 'dual'
+  };
+}
 
-      {/* Context Menu */}
-      {contextMenu && (
-        <ContextMenu
-          contextMenu={contextMenu}
-          onAction={handleContextAction}
-        />
+export default initIDE;`}</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        {/* Right Panel - AI/Preview */}
+        {rightPanelOpen && (
+          <aside className="right-panel">
+            <div className="panel-header">
+              <span>AI ASSISTANT</span>
+              <button onClick={() => setRightPanelOpen(false)}>
+                <X size={14} />
+              </button>
+            </div>
+            
+            <div className="agent-selector">
+              <button 
+                className={`agent-btn ${activeAgent === 'dashka' ? 'active' : ''}`}
+                onClick={() => setActiveAgent('dashka')}
+              >
+                🏗️ Dashka
+              </button>
+              <button 
+                className={`agent-btn ${activeAgent === 'claudy' ? 'active' : ''}`}
+                onClick={() => setActiveAgent('claudy')}
+              >
+                🤖 Claudy
+              </button>
+            </div>
+            
+            <div className="ai-placeholder">
+              <p>AI Panel placeholder - будет чат с {activeAgent}</p>
+            </div>
+          </aside>
+        )}
+      </div>
+
+      {/* Bottom Terminal */}
+      {terminalOpen && (
+        <div className="terminal-panel">
+          <div className="terminal-header">
+            <span>TERMINAL</span>
+            <button onClick={() => setTerminalOpen(false)}>
+              <X size={14} />
+            </button>
+          </div>
+          <div className="terminal-content">
+            <div className="terminal-line">$ npm run dev</div>
+            <div className="terminal-line">🚀 iCoder Plus starting...</div>
+            <div className="terminal-cursor">$_</div>
+          </div>
+        </div>
       )}
 
-      {/* Export Progress */}
-      {exportProgress && (
-        <ExportProgress progress={exportProgress} />
-      )}
+      {/* Bottom Action Bar */}
+      <footer className="ide-statusbar">
+        <div className="statusbar-left">
+          <button 
+            className={`status-btn ${terminalOpen ? 'active' : ''}`}
+            onClick={() => setTerminalOpen(!terminalOpen)}
+            title="Toggle Terminal (Ctrl+`)"
+          >
+            <TerminalIcon size={14} />
+            Terminal
+          </button>
+        </div>
+        
+        <div className="statusbar-right">
+          <span className="status-info">JavaScript</span>
+          <span className="status-info">UTF-8</span>
+          <span className="status-info">Ln 1, Col 1</span>
+        </div>
+      </footer>
     </div>
   )
 }

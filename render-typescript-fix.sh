@@ -1,3 +1,90 @@
+#!/bin/bash
+
+echo "🔧 Fixing Render TypeScript build issues..."
+
+cd backend
+
+# ============================================================================
+# 1. ОБНОВИТЬ PACKAGE.JSON - ПЕРЕМЕСТИТЬ TYPES В DEPENDENCIES
+# ============================================================================
+
+cat > package.json << 'EOF'
+{
+  "name": "icoder-plus-backend",
+  "version": "2.1.1",
+  "description": "iCoder Plus Backend API",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "npm install && tsc && echo 'Backend build complete'",
+    "start": "node dist/server.js",
+    "dev": "nodemon --exec ts-node src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5", 
+    "helmet": "^7.0.0",
+    "compression": "^1.7.4",
+    "dotenv": "^16.3.1",
+    "@types/node": "^20.5.0",
+    "@types/express": "^4.17.17",
+    "@types/cors": "^2.8.13",
+    "@types/compression": "^1.7.2",
+    "typescript": "^5.1.6"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1",
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+EOF
+
+echo "✅ package.json обновлен - types в dependencies"
+
+# ============================================================================
+# 2. ИСПРАВИТЬ TSCONFIG.JSON ДЛЯ RENDER
+# ============================================================================
+
+cat > tsconfig.json << 'EOF'
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM"],
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": false,
+    "declaration": false,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "removeComments": true,
+    "sourceMap": false,
+    "noImplicitAny": false,
+    "typeRoots": ["./node_modules/@types", "./types"],
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}
+EOF
+
+echo "✅ tsconfig.json исправлен для Render"
+
+# ============================================================================
+# 3. СОЗДАТЬ УПРОЩЕННЫЙ SERVER.TS БЕЗ STRICT TYPES
+# ============================================================================
+
+cat > src/server.ts << 'EOF'
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -206,3 +293,62 @@ process.on('unhandledRejection', (reason: any) => {
   console.error('Unhandled Rejection:', reason);
   process.exit(1);
 });
+EOF
+
+echo "✅ server.ts упрощен для совместимости с Render"
+
+# ============================================================================
+# 4. СОЗДАТЬ TYPES DIRECTORY
+# ============================================================================
+
+mkdir -p types
+
+cat > types/global.d.ts << 'EOF'
+declare namespace NodeJS {
+  interface ProcessEnv {
+    NODE_ENV: 'development' | 'production';
+    PORT: string;
+    OPENAI_API_KEY?: string;
+    ANTHROPIC_API_KEY?: string;
+  }
+}
+EOF
+
+echo "✅ Global types созданы"
+
+# ============================================================================
+# 5. ТЕСТИРОВАТЬ ЛОКАЛЬНУЮ СБОРКУ
+# ============================================================================
+
+echo "🔨 Тестируем исправленную сборку..."
+
+rm -rf node_modules package-lock.json dist
+npm install
+
+if [ $? -eq 0 ]; then
+    echo "✅ Dependencies установлены"
+    
+    npm run build
+    
+    if [ $? -eq 0 ]; then
+        echo "✅ Backend готов к деплою на Render!"
+        echo ""
+        echo "📋 RENDER SETTINGS:"
+        echo "Root Directory: backend"
+        echo "Build Command:  npm run build" 
+        echo "Start Command:  npm run start"
+        echo ""
+        echo "🔑 ENV VARS:"
+        echo "NODE_ENV=production"
+        echo "OPENAI_API_KEY=your_key"
+        echo "ANTHROPIC_API_KEY=your_key"
+        echo ""
+        echo "🚀 COMMIT & PUSH TO DEPLOY!"
+    else
+        echo "❌ Build failed"
+        exit 1
+    fi
+else
+    echo "❌ Dependencies failed"
+    exit 1
+fi

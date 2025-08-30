@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useFileManager } from './hooks/useFileManager'
 import FileTree from './components/FileTree'
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react'
 import './styles/globals.css'
 
 function App() {
@@ -21,6 +22,11 @@ function App() {
     updateFileContent
   } = useFileManager()
 
+  // Panel states
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false)
+  const [terminalCollapsed, setTerminalCollapsed] = useState(false)
+  const [activeAgent, setActiveAgent] = useState('claudy')
+
   return (
     <div className="app-container">
       {/* Top Header */}
@@ -38,19 +44,32 @@ function App() {
       {/* Main Content */}
       <div className="app-content">
         {/* Left Panel - File Tree */}
-        <div className="left-panel">
-          <FileTree
-            fileTree={fileTree}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            openFile={openFile}
-            createFile={createFile}
-            createFolder={createFolder}
-            renameItem={renameItem}
-            deleteItem={deleteItem}
-            toggleFolder={toggleFolder}
-            selectedFileId={activeTab?.id}
-          />
+        {!leftPanelCollapsed && (
+          <div className="left-panel">
+            <FileTree
+              fileTree={fileTree}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              openFile={openFile}
+              createFile={createFile}
+              createFolder={createFolder}
+              renameItem={renameItem}
+              deleteItem={deleteItem}
+              toggleFolder={toggleFolder}
+              selectedFileId={activeTab?.id}
+            />
+          </div>
+        )}
+
+        {/* Collapse Toggle */}
+        <div className="panel-toggle left-toggle">
+          <button 
+            onClick={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
+            className="toggle-btn"
+            title={leftPanelCollapsed ? "Show Explorer" : "Hide Explorer"}
+          >
+            {leftPanelCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
         </div>
 
         {/* Main Panel - Editor Area */}
@@ -103,30 +122,67 @@ function App() {
           <div className="ai-header">
             <h3>AI ASSISTANT</h3>
             <div className="agent-selector">
-              <button className="agent-btn">🏗️ Dashka</button>
-              <button className="agent-btn active">🤖 Claudy</button>
+              <button 
+                className={`agent-btn ${activeAgent === 'dashka' ? 'active' : ''}`}
+                onClick={() => setActiveAgent('dashka')}
+              >
+                🏗️ Dashka
+              </button>
+              <button 
+                className={`agent-btn ${activeAgent === 'claudy' ? 'active' : ''}`}
+                onClick={() => setActiveAgent('claudy')}
+              >
+                🤖 Claudy
+              </button>
             </div>
           </div>
           <div className="ai-content">
-            <p>AI Panel placeholder - будет чат с Cloudy</p>
+            <p>
+              {activeAgent === 'dashka' 
+                ? 'Dashka (Architect): Анализирую архитектуру и предлагаю улучшения кода.' 
+                : 'Claudy (Code Gen): Генерирую код и помогаю с реализацией.'
+              }
+            </p>
           </div>
         </div>
       </div>
 
       {/* Bottom Terminal */}
-      <div className="bottom-panel">
-        <div className="terminal-header">
-          <span>TERMINAL</span>
-        </div>
-        <div className="terminal-content">
-          <div className="terminal-line">
-            <span className="prompt">$ npm run dev</span>
+      {!terminalCollapsed && (
+        <div className="bottom-panel">
+          <div className="terminal-header">
+            <span>TERMINAL</span>
+            <button 
+              onClick={() => setTerminalCollapsed(true)}
+              className="terminal-close"
+              title="Hide Terminal"
+            >
+              <ChevronDown size={14} />
+            </button>
           </div>
-          <div className="terminal-line">
-            <span className="output">🚀 iCoder Plus starting...</span>
+          <div className="terminal-content">
+            <div className="terminal-line">
+              <span className="prompt">$ npm run dev</span>
+            </div>
+            <div className="terminal-line">
+              <span className="output">🚀 iCoder Plus starting...</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Terminal Toggle */}
+      {terminalCollapsed && (
+        <div className="panel-toggle terminal-toggle">
+          <button 
+            onClick={() => setTerminalCollapsed(false)}
+            className="toggle-btn"
+            title="Show Terminal"
+          >
+            <ChevronUp size={16} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

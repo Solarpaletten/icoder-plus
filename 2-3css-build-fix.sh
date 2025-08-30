@@ -1,3 +1,19 @@
+#!/bin/bash
+
+echo "Исправляем CSS и build проблемы"
+
+# ============================================================================
+# 1. ИСПРАВИТЬ CSS СИНТАКСИЧЕСКУЮ ОШИБКУ
+# ============================================================================
+
+cd frontend/src/styles
+
+# Найти и показать проблемную строку
+echo "Проверяем globals.css на строке 434..."
+sed -n '430,440p' globals.css
+
+# Исправить CSS - пересоздать файл с корректным синтаксисом
+cat > globals.css << 'EOF'
 * {
   margin: 0;
   padding: 0;
@@ -189,30 +205,6 @@ body {
   margin-bottom: 8px;
 }
 
-.agent-selector {
-  display: flex;
-  gap: 4px;
-}
-
-.agent-btn {
-  padding: 4px 8px;
-  background: transparent;
-  border: 1px solid #464647;
-  color: #cccccc;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 11px;
-}
-
-.agent-btn:hover {
-  border-color: #007acc;
-}
-
-.agent-btn.active {
-  background: #007acc;
-  border-color: #007acc;
-}
-
 .ai-content {
   padding: 16px;
   color: #888;
@@ -233,6 +225,9 @@ body {
   border-bottom: 1px solid #464647;
   font-size: 12px;
   color: #cccccc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .terminal-content {
@@ -431,7 +426,7 @@ body {
 }
 
 .left-toggle {
-  left: leftPanelCollapsed ? 0 : 299px;
+  left: 0;
   top: 50%;
   transform: translateY(-50%);
   border-radius: 0 4px 4px 0;
@@ -472,12 +467,6 @@ body {
   color: #cccccc;
 }
 
-.terminal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 /* Agent Selector Fix */
 .agent-selector {
   display: flex;
@@ -504,108 +493,36 @@ body {
   border-color: #007acc;
   color: white;
 }
+EOF
 
-/* Inline Creation Styles */
-.tree-item.creating {
-  background: rgba(0, 122, 204, 0.1);
-  border: 1px dashed #007acc;
-}
+echo "✅ CSS исправлен"
 
-.tree-create-input {
-  flex: 1;
-  background: #3c3c3c;
-  border: 1px solid #007acc;
-  border-radius: 3px;
-  padding: 2px 6px;
-  font-size: 13px;
-  color: #cccccc;
-  outline: none;
-}
+# ============================================================================
+# 2. ТЕСТИРОВАТЬ СБОРКУ ИЗ ПРАВИЛЬНОЙ ДИРЕКТОРИИ
+# ============================================================================
 
-.tree-create-input::placeholder {
-  color: #888;
-  font-style: italic;
-}
+cd ../../..
+echo "Тестируем из директории: $(pwd)"
 
-/* Panel Toggles */
-.panel-toggle {
-  position: absolute;
-  z-index: 100;
-  background: #2d2d30;
-  border: 1px solid #464647;
-}
+npm run build
 
-.left-toggle {
-  left: leftPanelCollapsed ? 0 : 299px;
-  top: 50%;
-  transform: translateY(-50%);
-  border-radius: 0 4px 4px 0;
-}
-
-.terminal-toggle {
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  border-radius: 4px 4px 0 0;
-}
-
-.toggle-btn {
-  background: none;
-  border: none;
-  color: #cccccc;
-  cursor: pointer;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-}
-
-.toggle-btn:hover {
-  background: #37373d;
-}
-
-.terminal-close {
-  background: none;
-  border: none;
-  color: #888;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-}
-
-.terminal-close:hover {
-  color: #cccccc;
-}
-
-.terminal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* Agent Selector Fix */
-.agent-selector {
-  display: flex;
-  gap: 4px;
-}
-
-.agent-btn {
-  padding: 4px 8px;
-  background: transparent;
-  border: 1px solid #464647;
-  color: #cccccc;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 11px;
-  transition: all 0.2s;
-}
-
-.agent-btn:hover {
-  border-color: #007acc;
-}
-
-.agent-btn.active {
-  background: #007acc;
-  border-color: #007acc;
-  color: white;
-}
+if [ $? -eq 0 ]; then
+    echo ""
+    echo "✅ УСПЕШНАЯ СБОРКА!"
+    echo ""
+    echo "ПРОБЛЕМЫ РЕШЕНЫ:"
+    echo "✅ CSS синтаксическая ошибка исправлена"
+    echo "✅ Build запускается из правильной директории"
+    echo "✅ FileUtils с корректным JSX рендерингом"
+    echo ""
+    echo "ГОТОВ К КОММИТУ:"
+    echo "git add ."
+    echo "git commit -m 'Fix CSS syntax error and JSX rendering'"
+    echo "git push origin main"
+    
+else
+    echo "❌ Сборка все еще не удалась"
+    echo "Показываем последние строки globals.css для диагностики:"
+    tail -10 frontend/src/styles/globals.css
+    exit 1
+fi

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { ChevronRight, ChevronDown, File, Folder, Plus } from 'lucide-react'
+import { getFileIcon } from '../utils/fileUtils'
 
 const FileTree = ({ 
   fileTree = [], 
@@ -15,15 +16,7 @@ const FileTree = ({
 }) => {
   const [contextMenu, setContextMenu] = useState(null)
   const [renaming, setRenaming] = useState(null)
-
-  const getFileIcon = (fileName) => {
-    const ext = fileName.split('.').pop()?.toLowerCase()
-    const iconMap = {
-      js: '🟨', jsx: '🔷', ts: '🔵', tsx: '🔹',
-      html: '🟧', css: '🎨', json: '📄', md: '📝'
-    }
-    return iconMap[ext] || '📄'
-  }
+  const [creating, setCreating] = useState(null) // NEW: inline creation
 
   const handleRightClick = (e, item) => {
     e.preventDefault()
@@ -62,20 +55,36 @@ const FileTree = ({
     closeContextMenu()
   }
 
-  const handleCreateFile = (parentId = null) => {
-    const fileName = prompt("File name:")
-    if (fileName) {
-      createFile(parentId, fileName)
-    }
+  // NEW: Inline file creation
+  const startCreateFile = (parentId = null) => {
+    setCreating({
+      type: 'file',
+      parentId,
+      name: ''
+    })
     closeContextMenu()
   }
 
-  const handleCreateFolder = (parentId = null) => {
-    const folderName = prompt("Folder name:")
-    if (folderName) {
-      createFolder(parentId, folderName)
-    }
+  const startCreateFolder = (parentId = null) => {
+    setCreating({
+      type: 'folder', 
+      parentId,
+      name: ''
+    })
     closeContextMenu()
+  }
+
+  const handleCreate = (e) => {
+    if (e.key === 'Enter' && creating.name.trim()) {
+      if (creating.type === 'file') {
+        createFile(creating.parentId, creating.name.trim())
+      } else {
+        createFolder(creating.parentId, creating.name.trim())
+      }
+      setCreating(null)
+    } else if (e.key === 'Escape') {
+      setCreating(null)
+    }
   }
 
   const renderTreeItem = (item, level = 0) => {
@@ -83,7 +92,7 @@ const FileTree = ({
     const isRenaming = renaming?.id === item.id
 
     return (
-      <div key={item.id} className="tree-item-container">
+      <div key={item.id}>
         <div
           className={`tree-item ${item.type} ${isSelected ? 'selected' : ''}`}
           style={{ paddingLeft: level * 16 + 8 }}
@@ -108,7 +117,7 @@ const FileTree = ({
           <span className="tree-icon">
             {item.type === 'folder' ? 
               <Folder size={16} className="text-blue-400" /> : 
-              <span>{getFileIcon(item.name)}</span>
+              getFileIcon(item.name)
             }
           </span>
           
@@ -127,9 +136,59 @@ const FileTree = ({
           )}
         </div>
         
+        {/* Inline creation input */}
+        {creating && creating.parentId === item.id && item.type === 'folder' && item.expanded && (
+          <div 
+            className="tree-item creating"
+            style={{ paddingLeft: (level + 1) * 16 + 8 }}
+          >
+            <span className="tree-icon">
+              {creating.type === 'folder' ? 
+                <Folder size={16} className="text-blue-400" /> : 
+                <File size={16} className="text-gray-400" />
+              }
+            </span>
+            <input
+              type="text"
+              className="tree-create-input"
+              value={creating.name}
+              onChange={(e) => setCreating({...creating, name: e.target.value})}
+              onKeyDown={handleCreate}
+              onBlur={() => setCreating(null)}
+              placeholder={creating.type === 'file' ? 'filename.ext' : 'folder name'}
+              autoFocus
+            />
+          </div>
+        )}
+        
         {item.type === 'folder' && item.expanded && item.children && (
           <div className="tree-children">
             {item.children.map(child => renderTreeItem(child, level + 1))}
+          </div>
+        )}
+
+        {/* Root level creation */}
+        {creating && !creating.parentId && fileTree.indexOf(item) === fileTree.length - 1 && (
+          <div 
+            className="tree-item creating"
+            style={{ paddingLeft: 8 }}
+          >
+            <span className="tree-icon">
+              {creating.type === 'folder' ? 
+                <Folder size={16} className="text-blue-400" /> : 
+                <File size={16} className="text-gray-400" />
+              }
+            </span>
+            <input
+              type="text"
+              className="tree-create-input"
+              value={creating.name}
+              onChange={(e) => setCreating({...creating, name: e.target.value})}
+              onKeyDown={handleCreate}
+              onBlur={() => setCreating(null)}
+              placeholder={creating.type === 'file' ? 'filename.ext' : 'folder name'}
+              autoFocus
+            />
           </div>
         )}
       </div>
@@ -148,14 +207,14 @@ const FileTree = ({
           <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
             <button 
               className="tree-btn" 
-              onClick={() => handleCreateFile()}
+              onClick={() => startCreateFile()}
               title="New File"
             >
               <Plus size={14} />
             </button>
             <button 
               className="tree-btn"
-              onClick={() => handleCreateFolder()}
+              onClick={() => startCreateFolder()}
               title="New Folder" 
             >
               <Folder size={14} />
@@ -201,10 +260,10 @@ const FileTree = ({
               Delete
             </div>
             <div className="context-menu-divider" />
-            <div className="context-menu-item" onClick={() => handleCreateFile(contextMenu.item.type === 'folder' ? contextMenu.item.id : null)}>
+            <div className="context-menu-item" onClick={() => startCreateFile(contextMenu.item.type === 'folder' ? contextMenu.item.id : null)}>
               New File
             </div>
-            <div className="context-menu-item" onClick={() => handleCreateFolder(contextMenu.item.type === 'folder' ? contextMenu.item.id : null)}>
+            <div className="context-menu-item" onClick={() => startCreateFolder(contextMenu.item.type === 'folder' ? contextMenu.item.id : null)}>
               New Folder
             </div>
             {contextMenu.item.type === 'file' && (

@@ -2,17 +2,17 @@ import React, { useState } from 'react'
 import { ChevronRight, ChevronDown, File, Folder, Plus, X } from 'lucide-react'
 import { getFileIcon, getFolderIcon } from '../utils/fileUtils'
 
-const FileTree = ({ 
-  fileTree, 
-  searchQuery, 
-  setSearchQuery, 
-  openFile, 
+const FileTree = ({
+  fileTree,
+  searchQuery,
+  setSearchQuery,
+  openFile,
   createFile,
   createFolder,
   renameItem,
   deleteItem,
   toggleFolder,
-  selectedFileId 
+  selectedFileId
 }) => {
   const [contextMenu, setContextMenu] = useState(null)
   const [renaming, setRenaming] = useState(null)
@@ -101,28 +101,28 @@ const FileTree = ({
           {/* Folder Arrow */}
           {item.type === 'folder' && (
             <span className="tree-arrow">
-              {item.expanded ? 
-                <ChevronDown size={14} /> : 
+              {item.expanded ?
+                <ChevronDown size={14} /> :
                 <ChevronRight size={14} />
               }
             </span>
           )}
-          
+
           {/* File/Folder Icon */}
           <span className="tree-icon">
-            {item.type === 'folder' ? 
-              <Folder size={16} className="text-blue-400" /> : 
+            {item.type === 'folder' ?
+              getFolderIcon(item.name, item.expanded) :  
               getFileIcon(item.name)
             }
           </span>
-          
+
           {/* Name (editable when renaming) */}
           {isRenaming ? (
             <input
               type="text"
               className="tree-rename-input"
               value={renaming.newName}
-              onChange={(e) => setRenaming({...renaming, newName: e.target.value})}
+              onChange={(e) => setRenaming({ ...renaming, newName: e.target.value })}
               onKeyDown={handleRename}
               onBlur={() => setRenaming(null)}
               autoFocus
@@ -131,16 +131,16 @@ const FileTree = ({
             <span className="tree-name">{item.name}</span>
           )}
         </div>
-        
+
         {/* VS CODE STYLE: Inline creation field появляется прямо в дереве */}
         {creating && creating.parentId === item.id && item.type === 'folder' && item.expanded && (
-          <div 
+          <div
             className="tree-item creating"
             style={{ paddingLeft: (level + 1) * 16 + 8 }}
           >
             <span className="tree-icon">
-              {creating.type === 'folder' ? 
-                <Folder size={16} className="text-blue-400" /> : 
+              {creating.type === 'folder' ?
+                <Folder size={16} className="text-blue-400" /> :
                 <File size={16} className="text-gray-400" />
               }
             </span>
@@ -149,28 +149,28 @@ const FileTree = ({
               className="tree-creation-input"
               placeholder={creating.type === 'file' ? 'filename.js' : 'foldername'}
               value={creating.name}
-              onChange={(e) => setCreating({...creating, name: e.target.value})}
+              onChange={(e) => setCreating({ ...creating, name: e.target.value })}
               onKeyDown={handleInlineCreation}
               onBlur={() => setCreating(null)}
               autoFocus
             />
           </div>
         )}
-        
+
         {/* Children (for folders) */}
         {item.type === 'folder' && item.expanded && item.children && (
           <div className="tree-children">
             {item.children.map(child => renderTreeItem(child, level + 1))}
-            
+
             {/* Inline creation for root level if no parent */}
             {creating && creating.parentId === item.id && (
-              <div 
+              <div
                 className="tree-item creating"
                 style={{ paddingLeft: (level + 1) * 16 + 8 }}
               >
                 <span className="tree-icon">
-                  {creating.type === 'folder' ? 
-                    <Folder size={16} className="text-blue-400" /> : 
+                  {creating.type === 'folder' ?
+                    <Folder size={16} className="text-blue-400" /> :
                     <File size={16} className="text-gray-400" />
                   }
                 </span>
@@ -179,7 +179,7 @@ const FileTree = ({
                   className="tree-creation-input"
                   placeholder={creating.type === 'file' ? 'filename.js' : 'foldername'}
                   value={creating.name}
-                  onChange={(e) => setCreating({...creating, name: e.target.value})}
+                  onChange={(e) => setCreating({ ...creating, name: e.target.value })}
                   onKeyDown={handleInlineCreation}
                   onBlur={() => setCreating(null)}
                   autoFocus
@@ -198,8 +198,8 @@ const FileTree = ({
       return (
         <div className="tree-item creating" style={{ paddingLeft: 8 }}>
           <span className="tree-icon">
-            {creating.type === 'folder' ? 
-              <Folder size={16} className="text-blue-400" /> : 
+            {creating.type === 'folder' ?
+              <Folder size={16} className="text-blue-400" /> :
               <File size={16} className="text-gray-400" />
             }
           </span>
@@ -208,7 +208,7 @@ const FileTree = ({
             className="tree-creation-input"
             placeholder={creating.type === 'file' ? 'filename.js' : 'foldername'}
             value={creating.name}
-            onChange={(e) => setCreating({...creating, name: e.target.value})}
+            onChange={(e) => setCreating({ ...creating, name: e.target.value })}
             onKeyDown={handleInlineCreation}
             onBlur={() => setCreating(null)}
             autoFocus
@@ -219,7 +219,7 @@ const FileTree = ({
     return null
   }
 
-  const filteredTree = fileTree.filter(item => 
+  const filteredTree = fileTree.filter(item =>
     !searchQuery || item.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
@@ -227,20 +227,20 @@ const FileTree = ({
     <div className="file-tree">
       {/* Header with + buttons like VS Code */}
       <div className="tree-header">
-        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span className="font-semibold text-sm text-gray-300">EXPLORER</span>
-          <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
-            <button 
-              className="tree-btn" 
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <button
+              className="tree-btn"
               onClick={() => startInlineCreation('file', null)}
               title="New File (Ctrl+N)"
             >
               <Plus size={14} />
             </button>
-            <button 
+            <button
               className="tree-btn"
               onClick={() => startInlineCreation('folder', null)}
-              title="New Folder" 
+              title="New Folder"
             >
               <Folder size={14} />
             </button>
@@ -277,11 +277,11 @@ const FileTree = ({
       {contextMenu && (
         <>
           <div className="context-menu-overlay" onClick={closeContextMenu} />
-          <div 
+          <div
             className="context-menu"
-            style={{ 
-              left: contextMenu.x, 
-              top: contextMenu.y 
+            style={{
+              left: contextMenu.x,
+              top: contextMenu.y
             }}
           >
             <div className="context-menu-item" onClick={() => startRename(contextMenu.item)}>

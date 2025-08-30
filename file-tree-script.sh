@@ -962,5 +962,4 @@ if [ $? -eq 0 ]; then
         echo "   - ✅ Автосохранение в localStorage"
         echo ""
         echo "⏰ Время: 11:00-13:00 (2 часа)"
-        echo ""
-
+        echo "

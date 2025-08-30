@@ -515,3 +515,199 @@ html, body {
 .search-input::placeholder {
   color: var(--text-secondary);
 }
+
+/* Editor Area Improvements */
+.editor-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.code-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.editor-placeholder h3 {
+  color: var(--accent-blue);
+  margin-bottom: 12px;
+  font-size: 24px;
+}
+
+.editor-placeholder p {
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.code-preview {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  margin: 24px 0;
+  max-width: 600px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.code-header {
+  background: #21262d;
+  padding: 8px 16px;
+  border-bottom: 1px solid #30363d;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.filename {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.language {
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.code-content {
+  padding: 16px;
+  color: #c9d1d9;
+  font-family: 'Fira Code', 'JetBrains Mono', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+  overflow-x: auto;
+}
+
+.next-features {
+  margin-top: 32px;
+  text-align: left;
+  max-width: 400px;
+}
+
+.next-features h4 {
+  color: var(--accent-green);
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.next-features ul {
+  list-style: none;
+  color: var(--text-secondary);
+}
+
+.next-features li {
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.no-file-selected {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 40px;
+}
+
+.no-file-selected h3 {
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.welcome-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.welcome-actions button {
+  padding: 8px 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.welcome-actions button:hover {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+}
+
+/* Terminal Improvements */
+.terminal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.terminal-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.terminal-actions button {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.terminal-actions button:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.terminal-line {
+  margin-bottom: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.prompt {
+  color: var(--accent-green);
+}
+
+.command {
+  color: var(--text-primary);
+  margin-left: 8px;
+}
+
+.output {
+  color: var(--text-secondary);
+}
+
+.success {
+  color: var(--accent-green);
+}
+
+/* Agent Switcher Improvements */
+.agent-switcher button {
+  font-size: 11px;
+  padding: 6px 10px;
+}
+
+.agent-switcher button.active {
+  background: var(--accent-blue);
+  color: white;
+}

@@ -21,6 +21,31 @@ export const useFileManager = () => {
     return null
   }
 
+  // Sort items (folders first, then files alphabetically)
+  const sortTreeItems = (items) => {
+    return items.sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
+      return a.name.localeCompare(b.name)
+    })
+  }
+
+  // Get language from file extension
+  const getLanguageFromExtension = (filename) => {
+    const ext = filename.split('.').pop()?.toLowerCase()
+    const languageMap = {
+      js: 'javascript',
+      jsx: 'javascript',
+      ts: 'typescript',
+      tsx: 'typescript',
+      html: 'html',
+      css: 'css',
+      json: 'json',
+      py: 'python',
+      md: 'markdown'
+    }
+    return languageMap[ext] || 'text'
+  }
+
   // Update file content
   const updateFileContent = (fileId, content) => {
     const updateInTree = (tree) => {
@@ -217,31 +242,6 @@ export const useFileManager = () => {
     setFileTree(updateInTree)
   }
 
-  // Helper functions
-  const sortTreeItems = (items) => {
-    return items.sort((a, b) => {
-      // Folders first, then files
-      if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
-      return a.name.localeCompare(b.name)
-    })
-  }
-
-  const getLanguageFromExtension = (filename) => {
-    const ext = filename.split('.').pop()?.toLowerCase()
-    const languageMap = {
-      js: 'javascript',
-      jsx: 'javascript',
-      ts: 'typescript',
-      tsx: 'typescript',
-      html: 'html',
-      css: 'css',
-      json: 'json',
-      py: 'python',
-      md: 'markdown'
-    }
-    return languageMap[ext] || 'text'
-  }
-
   // Auto-save project to localStorage
   useEffect(() => {
     const projectData = {
@@ -249,12 +249,12 @@ export const useFileManager = () => {
       openTabs: openTabs.map(tab => tab.id),
       activeTabId: activeTab?.id
     }
-    localStorage.setItem('icoder-project-v2.1.1', JSON.stringify(projectData))
+    localStorage.setItem('icoder-project-v2.2.0', JSON.stringify(projectData))
   }, [fileTree, openTabs, activeTab])
 
-  // Load project from localStorage
+  // Load project from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('icoder-project-v2.1.1')
+    const saved = localStorage.getItem('icoder-project-v2.2.0')
     if (saved) {
       try {
         const project = JSON.parse(saved)

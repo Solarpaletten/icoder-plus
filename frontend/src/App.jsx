@@ -1,116 +1,92 @@
-import React, { useState } from 'react'
-import { 
-  PanelLeft, 
-  Terminal as TerminalIcon, 
-  Play, 
-  MessageSquare,
-  X,
-  Menu,
-  FileText,
-  Settings
-} from 'lucide-react'
-import './App.css'
+import React from 'react'
+import { useFileManager } from './hooks/useFileManager'
+import { useDualAgent } from './hooks/useDualAgent'
+import FileTree from './components/FileTree'
+import './styles/globals.css'
 
 function App() {
-  const [leftPanelOpen, setLeftPanelOpen] = useState(true)
-  const [rightPanelOpen, setRightPanelOpen] = useState(false)
-  const [terminalOpen, setTerminalOpen] = useState(false)
-  const [activeAgent, setActiveAgent] = useState('dashka')
+  const {
+    fileTree,
+    openTabs,
+    activeTab,
+    searchQuery,
+    setSearchQuery,
+    createFile,
+    createFolder,
+    renameItem,
+    deleteItem,
+    openFile,
+    closeTab,
+    setActiveTab,
+    toggleFolder,
+    updateFileContent
+  } = useFileManager()
+
+  const {
+    agent,
+    setAgent
+  } = useDualAgent()
 
   return (
-    <div className="ide-container">
-      {/* Topbar */}
-      <header className="ide-topbar">
-        <div className="topbar-left">
-          <button 
-            className="panel-toggle"
-            onClick={() => setLeftPanelOpen(!leftPanelOpen)}
-            title="Toggle File Explorer"
-          >
-            <Menu size={16} />
-          </button>
-          <div className="project-info">
-            <span className="project-name">iCoder Plus v2.2</span>
-            <span className="project-status">IDE Shell</span>
-          </div>
-        </div>
-        
-        <div className="topbar-center">
-          <span className="breadcrumb">Welcome.js</span>
-        </div>
-        
-        <div className="topbar-right">
-          <div className="agent-indicator">
-            <div className={`agent-dot ${activeAgent}`}></div>
-            <span>
-              {activeAgent === 'dashka' ? 'Dashka (Architect)' : 'Claudy (Code Gen)'}
-            </span>
-          </div>
-          <button 
-            className="panel-toggle"
-            onClick={() => setRightPanelOpen(!rightPanelOpen)}
-            title="Toggle AI Panel"
-          >
-            <MessageSquare size={16} />
-          </button>
-        </div>
-      </header>
-
-      {/* Main Layout */}
+    <div className="ide-layout">
+      {/* Main IDE Content */}
       <div className="ide-main">
         {/* Left Sidebar - File Explorer */}
-        {leftPanelOpen && (
-          <aside className="left-panel">
-            <div className="panel-header">
-              <span>EXPLORER</span>
-              <button onClick={() => setLeftPanelOpen(false)}>
-                <X size={14} />
-              </button>
-            </div>
-            <div className="file-explorer-placeholder">
-              <div className="folder-item">
-                <span>📁 src</span>
-              </div>
-              <div className="file-item">
-                <span>📄 App.jsx</span>
-              </div>
-              <div className="file-item">
-                <span>📄 index.js</span>
-              </div>
-              <div className="folder-item">
-                <span>📁 components</span>
-              </div>
-            </div>
-          </aside>
-        )}
+        <div className="ide-sidebar">
+          <FileTree
+            fileTree={fileTree}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            openFile={openFile}
+            createFile={createFile}
+            createFolder={createFolder}
+            renameItem={renameItem}
+            deleteItem={deleteItem}
+            toggleFolder={toggleFolder}
+            selectedFileId={activeTab?.id}
+          />
+        </div>
 
-        {/* Center - Editor Area */}
-        <main className="editor-area">
+        {/* Main Editor Area */}
+        <div className="ide-content">
+          {/* Tabs */}
           <div className="editor-tabs">
-            <div className="tab active">
-              <FileText size={14} />
-              <span>Welcome.js</span>
-              <button className="tab-close">
-                <X size={12} />
-              </button>
-            </div>
-            <div className="tab">
-              <FileText size={14} />
-              <span>App.jsx</span>
-              <button className="tab-close">
-                <X size={12} />
-              </button>
-            </div>
+            {openTabs.map(tab => (
+              <div
+                key={tab.id}
+                className={`editor-tab ${activeTab?.id === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab)}
+              >
+                <span className="tab-name">{tab.name}</span>
+                <button 
+                  className="tab-close"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    closeTab(tab)
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
           </div>
           
-          <div className="editor-content">
-            <div className="editor-placeholder">
-              <div className="welcome-message">
-                <h2>🚀 iCoder Plus v2.2 - IDE Shell</h2>
-                <p>Minimalist Visual IDE - Monaco Editor will be here</p>
-                <div className="placeholder-code">
-                  <pre>{`// Welcome to iCoder Plus IDE Shell
-console.log('Hello from IDE!');
+          {/* Editor Content */}
+          <div className="editor-area">
+            {activeTab ? (
+              <div className="code-editor">
+                <div className="editor-placeholder">
+                  <h3>🚀 iCoder Plus v2.2 - IDE Shell</h3>
+                  <p>Minimalist Visual IDE - Monaco Editor will be here</p>
+                  
+                  <div className="code-preview">
+                    <div className="code-header">
+                      <span className="filename">{activeTab.name}</span>
+                      <span className="language">{activeTab.language || 'text'}</span>
+                    </div>
+                    <pre className="code-content">
+{activeTab.content || `// Welcome to iCoder Plus IDE Shell
+console.log('Hello from ${activeTab.name}!');
 
 function initIDE() {
   return {
@@ -121,81 +97,89 @@ function initIDE() {
   };
 }
 
-export default initIDE;`}</pre>
+export default initIDE;`}
+                    </pre>
+                  </div>
+                  
+                  <div className="next-features">
+                    <h4>📋 Next: Monaco Editor Integration</h4>
+                    <ul>
+                      <li>✅ Syntax highlighting</li>
+                      <li>✅ Auto-completion</li>
+                      <li>✅ Multiple cursors</li>
+                      <li>✅ Hot keys (Ctrl+S, Ctrl+R)</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="no-file-selected">
+                <h3>No file selected</h3>
+                <p>Select a file from the explorer to start editing</p>
+                <div className="welcome-actions">
+                  <button onClick={() => createFile(null, 'index.js')}>
+                    📄 New File
+                  </button>
+                  <button onClick={() => createFolder(null, 'components')}>
+                    📁 New Folder
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        </main>
+        </div>
 
-        {/* Right Panel - AI/Preview */}
-        {rightPanelOpen && (
-          <aside className="right-panel">
-            <div className="panel-header">
-              <span>AI ASSISTANT</span>
-              <button onClick={() => setRightPanelOpen(false)}>
-                <X size={14} />
-              </button>
-            </div>
-            
-            <div className="agent-selector">
+        {/* Right Panel - AI Assistant */}
+        <div className="ide-right-panel">
+          <div className="right-panel-header">
+            <h3>AI ASSISTANT</h3>
+            <div className="agent-switcher">
               <button 
-                className={`agent-btn ${activeAgent === 'dashka' ? 'active' : ''}`}
-                onClick={() => setActiveAgent('dashka')}
+                className={agent === 'dashka' ? 'active' : ''}
+                onClick={() => setAgent('dashka')}
               >
                 🏗️ Dashka
               </button>
               <button 
-                className={`agent-btn ${activeAgent === 'claudy' ? 'active' : ''}`}
-                onClick={() => setActiveAgent('claudy')}
+                className={agent === 'claudy' ? 'active' : ''}
+                onClick={() => setAgent('claudy')}
               >
                 🤖 Claudy
               </button>
             </div>
-            
-            <div className="ai-placeholder">
-              <p>AI Panel placeholder - будет чат с {activeAgent}</p>
-            </div>
-          </aside>
-        )}
+          </div>
+          <div className="ai-content">
+            <p>AI Panel placeholder - будет чат с {agent === 'dashka' ? 'Dashka (Architect)' : 'Claudy (Generator)'}</p>
+          </div>
+        </div>
       </div>
 
       {/* Bottom Terminal */}
-      {terminalOpen && (
-        <div className="terminal-panel">
-          <div className="terminal-header">
-            <span>TERMINAL</span>
-            <button onClick={() => setTerminalOpen(false)}>
-              <X size={14} />
-            </button>
-          </div>
-          <div className="terminal-content">
-            <div className="terminal-line">$ npm run dev</div>
-            <div className="terminal-line">🚀 iCoder Plus starting...</div>
-            <div className="terminal-cursor">$_</div>
+      <div className="terminal-panel">
+        <div className="terminal-header">
+          <span>TERMINAL</span>
+          <div className="terminal-actions">
+            <button>⚙️</button>
+            <button>📋</button>
+            <button>🗙</button>
           </div>
         </div>
-      )}
-
-      {/* Bottom Action Bar */}
-      <footer className="ide-statusbar">
-        <div className="statusbar-left">
-          <button 
-            className={`status-btn ${terminalOpen ? 'active' : ''}`}
-            onClick={() => setTerminalOpen(!terminalOpen)}
-            title="Toggle Terminal (Ctrl+`)"
-          >
-            <TerminalIcon size={14} />
-            Terminal
-          </button>
+        <div className="terminal-content">
+          <div className="terminal-line">
+            <span className="prompt">icoderplus@localhost:~$</span>
+            <span className="command"> npm run dev</span>
+          </div>
+          <div className="terminal-line">
+            <span className="output">🚀 Local:   http://localhost:5173/</span>
+          </div>
+          <div className="terminal-line">
+            <span className="output">📡 Network: http://192.168.1.100:5173/</span>
+          </div>
+          <div className="terminal-line">
+            <span className="success">✅ ready in 1.2s</span>
+          </div>
         </div>
-        
-        <div className="statusbar-right">
-          <span className="status-info">JavaScript</span>
-          <span className="status-info">UTF-8</span>
-          <span className="status-info">Ln 1, Col 1</span>
-        </div>
-      </footer>
+      </div>
     </div>
   )
 }

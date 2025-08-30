@@ -1,5 +1,56 @@
 import { useState, useEffect } from 'react'
-import { initialFiles } from '../utils/initialData'
+
+// Встроенные начальные файлы
+const initialFiles = [
+  {
+    id: 'src',
+    name: 'src',
+    type: 'folder',
+    expanded: true,
+    children: [
+      {
+        id: 'app-jsx',
+        name: 'App.jsx',
+        type: 'file',
+        language: 'javascript',
+        content: `import React from 'react'
+
+function App() {
+  return (
+    <div className="App">
+      <h1>Welcome to iCoder Plus v2.2</h1>
+      <p>File Tree Management is working!</p>
+    </div>
+  )
+}
+
+export default App`
+      },
+      {
+        id: 'components',
+        name: 'components',
+        type: 'folder',
+        expanded: false,
+        children: []
+      }
+    ]
+  },
+  {
+    id: 'readme-md',
+    name: 'README.md',
+    type: 'file',
+    language: 'markdown',
+    content: `# iCoder Plus v2.2
+
+File Tree Management is working!
+
+## Features
+- Create files and folders
+- Context menu operations
+- Search functionality
+- Auto-save to localStorage`
+  }
+]
 
 export const useFileManager = () => {
   const [fileTree, setFileTree] = useState(initialFiles)
@@ -9,7 +60,6 @@ export const useFileManager = () => {
 
   const generateId = () => Math.random().toString(36).substr(2, 9)
 
-  // Find file by ID in tree structure
   const findFileById = (tree, id) => {
     for (const item of tree) {
       if (item.id === id) return item
@@ -21,7 +71,13 @@ export const useFileManager = () => {
     return null
   }
 
-  // Update file content
+  const sortItems = (items) => {
+    return items.sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
+      return a.name.localeCompare(b.name)
+    })
+  }
+
   const updateFileContent = (fileId, content) => {
     const updateInTree = (tree) => {
       return tree.map(item => {
@@ -36,19 +92,15 @@ export const useFileManager = () => {
     }
     
     setFileTree(updateInTree)
-    
-    // Update open tabs
     setOpenTabs(tabs => tabs.map(tab => 
       tab.id === fileId ? { ...tab, content } : tab
     ))
     
-    // Update active tab if it's the file being updated
     if (activeTab?.id === fileId) {
       setActiveTab({ ...activeTab, content })
     }
   }
 
-  // Create new file
   const createFile = (parentId = null, name, content = '') => {
     const newFile = {
       id: generateId(),
@@ -64,10 +116,7 @@ export const useFileManager = () => {
         return tree.map(item => {
           if (item.id === parentId && item.type === 'folder') {
             const children = [...(item.children || []), newFile]
-            return {
-              ...item,
-              children: sortTreeItems(children)
-            }
+            return { ...item, children: sortItems(children) }
           }
           if (item.children) {
             return { ...item, children: addToTree(item.children) }
@@ -78,15 +127,14 @@ export const useFileManager = () => {
       setFileTree(addToTree)
     } else {
       // Add to root
-      setFileTree(tree => sortTreeItems([...tree, newFile]))
+      setFileTree(tree => sortItems([...tree, newFile]))
     }
 
-    // Auto-open the new file
+    // Auto-open new file
     openFile(newFile)
     return newFile
   }
 
-  // Create new folder
   const createFolder = (parentId = null, name) => {
     const newFolder = {
       id: generateId(),
@@ -102,10 +150,7 @@ export const useFileManager = () => {
         return tree.map(item => {
           if (item.id === parentId && item.type === 'folder') {
             const children = [...(item.children || []), newFolder]
-            return {
-              ...item,
-              children: sortTreeItems(children)
-            }
+            return { ...item, children: sortItems(children) }
           }
           if (item.children) {
             return { ...item, children: addToTree(item.children) }
@@ -116,13 +161,12 @@ export const useFileManager = () => {
       setFileTree(addToTree)
     } else {
       // Add to root
-      setFileTree(tree => sortTreeItems([...tree, newFolder]))
+      setFileTree(tree => sortItems([...tree, newFolder]))
     }
 
     return newFolder
   }
 
-  // Rename item
   const renameItem = (item, newName) => {
     const updateInTree = (tree) => {
       return tree.map(treeItem => {
@@ -141,18 +185,15 @@ export const useFileManager = () => {
     }
     setFileTree(updateInTree)
 
-    // Update open tabs
     setOpenTabs(tabs => tabs.map(tab => 
       tab.id === item.id ? { ...tab, name: newName } : tab
     ))
     
-    // Update active tab
     if (activeTab?.id === item.id) {
       setActiveTab({ ...activeTab, name: newName })
     }
   }
 
-  // Delete item
   const deleteItem = (item) => {
     const removeFromTree = (tree) => {
       return tree.filter(treeItem => {
@@ -165,18 +206,14 @@ export const useFileManager = () => {
     }
     
     setFileTree(removeFromTree)
-    
-    // Close related tabs
     setOpenTabs(tabs => tabs.filter(tab => tab.id !== item.id))
     
-    // Update active tab
     if (activeTab?.id === item.id) {
       const remainingTabs = openTabs.filter(tab => tab.id !== item.id)
       setActiveTab(remainingTabs.length > 0 ? remainingTabs[0] : null)
     }
   }
 
-  // Open file in tab
   const openFile = (file) => {
     if (file.type !== 'file') return
     
@@ -191,7 +228,6 @@ export const useFileManager = () => {
     setActiveTab(newTab)
   }
 
-  // Close tab
   const closeTab = (tab) => {
     const newTabs = openTabs.filter(t => t.id !== tab.id)
     setOpenTabs(newTabs)
@@ -201,7 +237,6 @@ export const useFileManager = () => {
     }
   }
 
-  // Toggle folder expanded state
   const toggleFolder = (folder) => {
     const updateInTree = (tree) => {
       return tree.map(item => {
@@ -217,17 +252,8 @@ export const useFileManager = () => {
     setFileTree(updateInTree)
   }
 
-  // Helper functions
-  const sortTreeItems = (items) => {
-    return items.sort((a, b) => {
-      // Folders first, then files
-      if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
-      return a.name.localeCompare(b.name)
-    })
-  }
-
-  const getLanguageFromExtension = (filename) => {
-    const ext = filename.split('.').pop()?.toLowerCase()
+  const getLanguageFromExtension = (fileName) => {
+    const ext = fileName.split('.').pop()?.toLowerCase()
     const languageMap = {
       js: 'javascript',
       jsx: 'javascript',

@@ -1,19 +1,17 @@
 #!/bin/bash
 
-echo "🔧 File Tree Integration Fix - подключаем новые компоненты"
+echo "Исправляем useFileManager.js - полная версия"
 
-cd frontend/src
-
+cd frontend/src/hooks
 
 # ============================================================================
-# 2. СОЗДАТЬ НЕДОСТАЮЩИЙ useFileManager ХУК
+# СОЗДАТЬ ПОЛНУЮ РАБОЧУЮ ВЕРСИЮ useFileManager.js
 # ============================================================================
 
-mkdir -p hooks
-
-cat > hooks/useFileManager.js << 'EOF'
+cat > useFileManager.js << 'EOF'
 import { useState, useEffect } from 'react'
 
+// Встроенные начальные файлы
 const initialFiles = [
   {
     id: 'src',
@@ -47,6 +45,21 @@ export default App`
         children: []
       }
     ]
+  },
+  {
+    id: 'readme-md',
+    name: 'README.md',
+    type: 'file',
+    language: 'markdown',
+    content: `# iCoder Plus v2.2
+
+File Tree Management is working!
+
+## Features
+- Create files and folders
+- Context menu operations
+- Search functionality
+- Auto-save to localStorage`
   }
 ]
 
@@ -58,13 +71,54 @@ export const useFileManager = () => {
 
   const generateId = () => Math.random().toString(36).substr(2, 9)
 
+  const findFileById = (tree, id) => {
+    for (const item of tree) {
+      if (item.id === id) return item
+      if (item.children) {
+        const found = findFileById(item.children, id)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  const sortItems = (items) => {
+    return items.sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
+      return a.name.localeCompare(b.name)
+    })
+  }
+
+  const updateFileContent = (fileId, content) => {
+    const updateInTree = (tree) => {
+      return tree.map(item => {
+        if (item.id === fileId) {
+          return { ...item, content }
+        }
+        if (item.children) {
+          return { ...item, children: updateInTree(item.children) }
+        }
+        return item
+      })
+    }
+    
+    setFileTree(updateInTree)
+    setOpenTabs(tabs => tabs.map(tab => 
+      tab.id === fileId ? { ...tab, content } : tab
+    ))
+    
+    if (activeTab?.id === fileId) {
+      setActiveTab({ ...activeTab, content })
+    }
+  }
+
   const createFile = (parentId = null, name, content = '') => {
     const newFile = {
       id: generateId(),
       name,
       type: 'file',
       content,
-      language: 'javascript'
+      language: getLanguageFromExtension(name)
     }
 
     if (parentId) {
@@ -102,6 +156,7 @@ export const useFileManager = () => {
     }
 
     if (parentId) {
+      // Add to specific folder
       const addToTree = (tree) => {
         return tree.map(item => {
           if (item.id === parentId && item.type === 'folder') {
@@ -116,6 +171,7 @@ export const useFileManager = () => {
       }
       setFileTree(addToTree)
     } else {
+      // Add to root
       setFileTree(tree => sortItems([...tree, newFolder]))
     }
 
@@ -126,7 +182,11 @@ export const useFileManager = () => {
     const updateInTree = (tree) => {
       return tree.map(treeItem => {
         if (treeItem.id === item.id) {
-          return { ...treeItem, name: newName }
+          return { 
+            ...treeItem, 
+            name: newName,
+            language: treeItem.type === 'file' ? getLanguageFromExtension(newName) : undefined
+          }
         }
         if (treeItem.children) {
           return { ...treeItem, children: updateInTree(treeItem.children) }
@@ -136,7 +196,6 @@ export const useFileManager = () => {
     }
     setFileTree(updateInTree)
 
-    // Update tabs
     setOpenTabs(tabs => tabs.map(tab => 
       tab.id === item.id ? { ...tab, name: newName } : tab
     ))
@@ -204,36 +263,60 @@ export const useFileManager = () => {
     setFileTree(updateInTree)
   }
 
-  const updateFileContent = (fileId, content) => {
-    const updateInTree = (tree) => {
-      return tree.map(item => {
-        if (item.id === fileId) {
-          return { ...item, content }
-        }
-        if (item.children) {
-          return { ...item, children: updateInTree(item.children) }
-        }
-        return item
-      })
+  const getLanguageFromExtension = (fileName) => {
+    const ext = fileName.split('.').pop()?.toLowerCase()
+    const languageMap = {
+      js: 'javascript',
+      jsx: 'javascript',
+      ts: 'typescript',
+      tsx: 'typescript',
+      html: 'html',
+      css: 'css',
+      json: 'json',
+      py: 'python',
+      md: 'markdown'
     }
-    
-    setFileTree(updateInTree)
-    
-    setOpenTabs(tabs => tabs.map(tab => 
-      tab.id === fileId ? { ...tab, content } : tab
-    ))
-    
-    if (activeTab?.id === fileId) {
-      setActiveTab({ ...activeTab, content })
-    }
+    return languageMap[ext] || 'text'
   }
 
-  const sortItems = (items) => {
-    return items.sort((a, b) => {
-      if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
-      return a.name.localeCompare(b.name)
-    })
-  }
+  // Auto-save project to localStorage
+  useEffect(() => {
+    const projectData = {
+      fileTree,
+      openTabs: openTabs.map(tab => tab.id),
+      activeTabId: activeTab?.id
+    }
+    localStorage.setItem('icoder-project-v2.1.1', JSON.stringify(projectData))
+  }, [fileTree, openTabs, activeTab])
+
+  // Load project from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('icoder-project-v2.1.1')
+    if (saved) {
+      try {
+        const project = JSON.parse(saved)
+        if (project.fileTree) {
+          setFileTree(project.fileTree)
+          
+          // Restore open tabs
+          if (project.openTabs) {
+            const restoredTabs = project.openTabs
+              .map(tabId => findFileById(project.fileTree, tabId))
+              .filter(Boolean)
+            setOpenTabs(restoredTabs)
+            
+            // Restore active tab
+            if (project.activeTabId) {
+              const activeFile = findFileById(project.fileTree, project.activeTabId)
+              if (activeFile) setActiveTab(activeFile)
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load project:', e)
+      }
+    }
+  }, [])
 
   return {
     fileTree,
@@ -249,37 +332,8 @@ export const useFileManager = () => {
     closeTab,
     setActiveTab,
     toggleFolder,
-    updateFileContent
+    updateFileContent,
+    findFileById
   }
 }
 EOF
-
-# ============================================================================
-# 3. ОБНОВИТЬ CSS ДЛЯ ПОЛНОГО LAYOUT
-# ============================================================================
-=====================================
-echo "Testing integration..."
-
-cd ..
-npm run build
-
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "✅ FILE TREE INTEGRATION УСПЕШНА!"
-    echo ""
-    echo "ТЕПЕРЬ ДОЛЖНО БЫТЬ ВИДНО:"
-    echo "✅ Кнопки + File/Folder в заголовке EXPLORER"
-    echo "✅ Поле поиска под заголовком"
-    echo "✅ Контекстное меню по правому клику"
-    echo "✅ Табы файлов с кнопками закрытия"
-    echo "✅ Полный layout с тремя панелями"
-    echo ""
-    echo "ТЕСТЫ ДЛЯ ПРОВЕРКИ:"
-    echo "1. Правый клик на src → должно появиться меню"
-    echo "2. Клик + в заголовке → должен появиться prompt"
-    echo "3. Поиск файлов в поле Search"
-    echo "4. Открытие файлов в табах"
-else
-    echo "❌ Build failed"
-    exit 1
-fi

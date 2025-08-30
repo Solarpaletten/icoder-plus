@@ -1,3 +1,14 @@
+#!/bin/bash
+
+echo "🔧 ИСПРАВЛЯЕМ fileUtils.js ДЛЯ RENDER ДЕПЛОЯ"
+
+cd frontend/src/utils
+
+# ============================================================================
+# ИСПРАВИТЬ fileUtils.js - УБРАТЬ JSX ИЗ ОБЪЕКТА
+# ============================================================================
+
+cat > fileUtils.js << 'EOF'
 import { 
   FileText, 
   Code, 
@@ -85,3 +96,4 @@ export const isExecutableFile = (fileName) => {
   const ext = fileName.split('.').pop()?.toLowerCase()
   return ['html', 'js', 'jsx'].includes(ext)
 }
+EOF

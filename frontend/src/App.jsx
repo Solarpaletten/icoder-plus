@@ -1,207 +1,201 @@
 import React, { useState } from 'react'
 import { 
-  ChevronDown,
-  ChevronUp,
+  PanelLeft, 
+  Terminal as TerminalIcon, 
+  Play, 
+  MessageSquare,
   X,
-  Menu
+  Menu,
+  FileText,
+  Settings
 } from 'lucide-react'
-import FileTree from './components/FileTree'
-import { useFileManager } from './hooks/useFileManager'
-import './styles/globals.css'
+import './App.css'
 
 function App() {
   const [leftPanelOpen, setLeftPanelOpen] = useState(true)
-  const [rightPanelOpen, setRightPanelOpen] = useState(true)
-  const [terminalOpen, setTerminalOpen] = useState(true)
-  const [activeAgent, setActiveAgent] = useState('claudy')
-
-  // File Manager Hook
-  const {
-    fileTree,
-    openTabs,
-    activeTab,
-    searchQuery,
-    setSearchQuery,
-    createFile,
-    createFolder,
-    renameItem,
-    deleteItem,
-    openFile,
-    closeTab,
-    setActiveTab,
-    toggleFolder,
-    updateFileContent
-  } = useFileManager()
+  const [rightPanelOpen, setRightPanelOpen] = useState(false)
+  const [terminalOpen, setTerminalOpen] = useState(false)
+  const [activeAgent, setActiveAgent] = useState('dashka')
 
   return (
-    <div className="app-container">
-      {/* Header */}
-      <header className="app-header">
-        <div style={{display: 'flex', alignItems: 'center'}}>
+    <div className="ide-container">
+      {/* Topbar */}
+      <header className="ide-topbar">
+        <div className="topbar-left">
           <button 
+            className="panel-toggle"
             onClick={() => setLeftPanelOpen(!leftPanelOpen)}
-            style={{background: 'none', border: 'none', color: '#cccccc', marginRight: '12px', cursor: 'pointer'}}
+            title="Toggle File Explorer"
           >
             <Menu size={16} />
           </button>
-          <div className="app-title">iCoder Plus v2.2</div>
-          <div className="app-subtitle">File Tree Ready</div>
+          <div className="project-info">
+            <span className="project-name">iCoder Plus v2.2</span>
+            <span className="project-status">IDE Shell</span>
+          </div>
         </div>
         
-        <div className="status-indicator">
-          {activeTab ? activeTab.name : 'No file selected'}
+        <div className="topbar-center">
+          <span className="breadcrumb">Welcome.js</span>
         </div>
         
-        <div className="ai-panel-toggle">
-          {activeAgent === 'dashka' ? 'Dashka (Architect)' : 'Claudy (Assistant)'}
+        <div className="topbar-right">
+          <div className="agent-indicator">
+            <div className={`agent-dot ${activeAgent}`}></div>
+            <span>
+              {activeAgent === 'dashka' ? 'Dashka (Architect)' : 'Claudy (Code Gen)'}
+            </span>
+          </div>
+          <button 
+            className="panel-toggle"
+            onClick={() => setRightPanelOpen(!rightPanelOpen)}
+            title="Toggle AI Panel"
+          >
+            <MessageSquare size={16} />
+          </button>
         </div>
       </header>
 
-      <div className="app-content">
-        {/* Left Panel - File Explorer */}
+      {/* Main Layout */}
+      <div className="ide-main">
+        {/* Left Sidebar - File Explorer */}
         {leftPanelOpen && (
-          <div className="left-panel">
-            <FileTree
-              fileTree={fileTree}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              openFile={openFile}
-              createFile={createFile}
-              createFolder={createFolder}
-              renameItem={renameItem}
-              deleteItem={deleteItem}
-              toggleFolder={toggleFolder}
-              selectedFileId={activeTab?.id}
-            />
-          </div>
+          <aside className="left-panel">
+            <div className="panel-header">
+              <span>EXPLORER</span>
+              <button onClick={() => setLeftPanelOpen(false)}>
+                <X size={14} />
+              </button>
+            </div>
+            <div className="file-explorer-placeholder">
+              <div className="folder-item">
+                <span>📁 src</span>
+              </div>
+              <div className="file-item">
+                <span>📄 App.jsx</span>
+              </div>
+              <div className="file-item">
+                <span>📄 index.js</span>
+              </div>
+              <div className="folder-item">
+                <span>📁 components</span>
+              </div>
+            </div>
+          </aside>
         )}
 
-        {/* Main Panel - Editor */}
-        <div className="main-panel">
-          {/* File Tabs */}
-          {openTabs.length > 0 && (
-            <div className="editor-header">
-              <div className="editor-tabs">
-                {openTabs.map(tab => (
-                  <div
-                    key={tab.id}
-                    className={`editor-tab ${activeTab?.id === tab.id ? 'active' : ''}`}
-                    onClick={() => setActiveTab(tab)}
-                  >
-                    <span className="tab-name">{tab.name}</span>
-                    <button
-                      className="tab-close"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        closeTab(tab)
-                      }}
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                ))}
-              </div>
+        {/* Center - Editor Area */}
+        <main className="editor-area">
+          <div className="editor-tabs">
+            <div className="tab active">
+              <FileText size={14} />
+              <span>Welcome.js</span>
+              <button className="tab-close">
+                <X size={12} />
+              </button>
             </div>
-          )}
-
-          {/* Editor Content */}
+            <div className="tab">
+              <FileText size={14} />
+              <span>App.jsx</span>
+              <button className="tab-close">
+                <X size={12} />
+              </button>
+            </div>
+          </div>
+          
           <div className="editor-content">
-            {activeTab ? (
-              <textarea
-                value={activeTab.content || ''}
-                onChange={(e) => updateFileContent(activeTab.id, e.target.value)}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  background: '#1e1e1e',
-                  border: 'none',
-                  color: '#cccccc',
-                  fontFamily: 'Monaco, Menlo, monospace',
-                  fontSize: '14px',
-                  padding: '20px',
-                  resize: 'none',
-                  outline: 'none'
-                }}
-                placeholder="Start typing your code..."
-              />
-            ) : (
-              <div className="no-file-selected">
-                <div className="editor-placeholder">
-                  <h3>No file selected</h3>
-                  <p>Select a file from the explorer to start editing</p>
+            <div className="editor-placeholder">
+              <div className="welcome-message">
+                <h2>🚀 iCoder Plus v2.2 - IDE Shell</h2>
+                <p>Minimalist Visual IDE - Monaco Editor will be here</p>
+                <div className="placeholder-code">
+                  <pre>{`// Welcome to iCoder Plus IDE Shell
+console.log('Hello from IDE!');
+
+function initIDE() {
+  return {
+    fileTree: true,
+    editor: 'monaco',
+    terminal: true,
+    aiAgent: 'dual'
+  };
+}
+
+export default initIDE;`}</pre>
                 </div>
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        </main>
 
-        {/* Right Panel - AI Assistant */}
+        {/* Right Panel - AI/Preview */}
         {rightPanelOpen && (
-          <div className="right-panel">
-            <div className="ai-header">
-              <h3>AI ASSISTANT</h3>
-              <div className="agent-selector">
-                <button
-                  className={`agent-btn ${activeAgent === 'dashka' ? 'active' : ''}`}
-                  onClick={() => setActiveAgent('dashka')}
-                >
-                  Dashka
-                </button>
-                <button
-                  className={`agent-btn ${activeAgent === 'claudy' ? 'active' : ''}`}
-                  onClick={() => setActiveAgent('claudy')}
-                >
-                  Claudy
-                </button>
-              </div>
+          <aside className="right-panel">
+            <div className="panel-header">
+              <span>AI ASSISTANT</span>
+              <button onClick={() => setRightPanelOpen(false)}>
+                <X size={14} />
+              </button>
             </div>
-
-            <div className="ai-content">
-              <div style={{textAlign: 'center', padding: '20px'}}>
-                <div style={{fontSize: '48px', marginBottom: '12px'}}>
-                  {activeAgent === 'dashka' ? '🏗️' : '🤖'}
-                </div>
-                <h4 style={{color: '#cccccc', marginBottom: '8px'}}>
-                  {activeAgent === 'dashka' ? 'Dashka (Architect)' : 'Claudy (Assistant)'}
-                </h4>
-                <p>
-                  {activeAgent === 'dashka' 
-                    ? 'Ready to help with architecture and code review'
-                    : 'Ready to assist with coding and implementation'
-                  }
-                </p>
-              </div>
+            
+            <div className="agent-selector">
+              <button 
+                className={`agent-btn ${activeAgent === 'dashka' ? 'active' : ''}`}
+                onClick={() => setActiveAgent('dashka')}
+              >
+                🏗️ Dashka
+              </button>
+              <button 
+                className={`agent-btn ${activeAgent === 'claudy' ? 'active' : ''}`}
+                onClick={() => setActiveAgent('claudy')}
+              >
+                🤖 Claudy
+              </button>
             </div>
-          </div>
+            
+            <div className="ai-placeholder">
+              <p>AI Panel placeholder - будет чат с {activeAgent}</p>
+            </div>
+          </aside>
         )}
       </div>
 
-      {/* Bottom Panel - Terminal */}
-      <div className={`bottom-panel ${terminalOpen ? '' : 'collapsed'}`}>
-        <div className="terminal-header">
-          <span>TERMINAL</span>
+      {/* Bottom Terminal */}
+      {terminalOpen && (
+        <div className="terminal-panel">
+          <div className="terminal-header">
+            <span>TERMINAL</span>
+            <button onClick={() => setTerminalOpen(false)}>
+              <X size={14} />
+            </button>
+          </div>
+          <div className="terminal-content">
+            <div className="terminal-line">$ npm run dev</div>
+            <div className="terminal-line">🚀 iCoder Plus starting...</div>
+            <div className="terminal-cursor">$_</div>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Action Bar */}
+      <footer className="ide-statusbar">
+        <div className="statusbar-left">
           <button 
+            className={`status-btn ${terminalOpen ? 'active' : ''}`}
             onClick={() => setTerminalOpen(!terminalOpen)}
-            style={{background: 'none', border: 'none', color: '#cccccc', cursor: 'pointer'}}
+            title="Toggle Terminal (Ctrl+`)"
           >
-            {terminalOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+            <TerminalIcon size={14} />
+            Terminal
           </button>
         </div>
-
-        {terminalOpen && (
-          <div className="terminal-content">
-            <div className="terminal-line">
-              <span className="prompt">npm run dev</span>
-            </div>
-            <div className="terminal-line">
-              <span className="output">iCoder Plus starting...</span>
-            </div>
-            <div className="terminal-line">
-              <span className="prompt">✅ File Tree Management ready</span>
-            </div>
-          </div>
-        )}
-      </div>
+        
+        <div className="statusbar-right">
+          <span className="status-info">JavaScript</span>
+          <span className="status-info">UTF-8</span>
+          <span className="status-info">Ln 1, Col 1</span>
+        </div>
+      </footer>
     </div>
   )
 }

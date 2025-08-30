@@ -1,56 +1,5 @@
 import { useState, useEffect } from 'react'
-
-// Встроенные начальные файлы
-const initialFiles = [
-  {
-    id: 'src',
-    name: 'src',
-    type: 'folder',
-    expanded: true,
-    children: [
-      {
-        id: 'app-jsx',
-        name: 'App.jsx',
-        type: 'file',
-        language: 'javascript',
-        content: `import React from 'react'
-
-function App() {
-  return (
-    <div className="App">
-      <h1>Welcome to iCoder Plus v2.2</h1>
-      <p>File Tree Management is working!</p>
-    </div>
-  )
-}
-
-export default App`
-      },
-      {
-        id: 'components',
-        name: 'components',
-        type: 'folder',
-        expanded: false,
-        children: []
-      }
-    ]
-  },
-  {
-    id: 'readme-md',
-    name: 'README.md',
-    type: 'file',
-    language: 'markdown',
-    content: `# iCoder Plus v2.2
-
-File Tree Management is working!
-
-## Features
-- Create files and folders
-- Context menu operations
-- Search functionality
-- Auto-save to localStorage`
-  }
-]
+import { initialFiles } from '../utils/initialData'
 
 export const useFileManager = () => {
   const [fileTree, setFileTree] = useState(initialFiles)
@@ -69,13 +18,6 @@ export const useFileManager = () => {
       }
     }
     return null
-  }
-
-  const sortItems = (items) => {
-    return items.sort((a, b) => {
-      if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
-      return a.name.localeCompare(b.name)
-    })
   }
 
   const updateFileContent = (fileId, content) => {
@@ -101,41 +43,39 @@ export const useFileManager = () => {
     }
   }
 
-  const createFile = (parentId = null, name, content = '') => {
+  const createFile = (parentId, name, content = '') => {
     const newFile = {
       id: generateId(),
       name,
       type: 'file',
-      content,
-      language: getLanguageFromExtension(name)
+      content
     }
 
-    if (parentId) {
-      // Add to specific folder
-      const addToTree = (tree) => {
-        return tree.map(item => {
-          if (item.id === parentId && item.type === 'folder') {
-            const children = [...(item.children || []), newFile]
-            return { ...item, children: sortItems(children) }
+    const addToTree = (tree) => {
+      return tree.map(item => {
+        if (item.id === parentId) {
+          const children = [...(item.children || []), newFile]
+          return {
+            ...item,
+            children: children.sort((a, b) => {
+              if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
+              return a.name.localeCompare(b.name)
+            })
           }
-          if (item.children) {
-            return { ...item, children: addToTree(item.children) }
-          }
-          return item
-        })
-      }
-      setFileTree(addToTree)
-    } else {
-      // Add to root
-      setFileTree(tree => sortItems([...tree, newFile]))
+        }
+        if (item.children) {
+          return { ...item, children: addToTree(item.children) }
+        }
+        return item
+      })
     }
 
-    // Auto-open new file
+    setFileTree(addToTree)
     openFile(newFile)
     return newFile
   }
 
-  const createFolder = (parentId = null, name) => {
+  const createFolder = (parentId, name) => {
     const newFolder = {
       id: generateId(),
       name,
@@ -144,38 +84,33 @@ export const useFileManager = () => {
       children: []
     }
 
-    if (parentId) {
-      // Add to specific folder
-      const addToTree = (tree) => {
-        return tree.map(item => {
-          if (item.id === parentId && item.type === 'folder') {
-            const children = [...(item.children || []), newFolder]
-            return { ...item, children: sortItems(children) }
+    const addToTree = (tree) => {
+      return tree.map(item => {
+        if (item.id === parentId) {
+          const children = [...(item.children || []), newFolder]
+          return {
+            ...item,
+            children: children.sort((a, b) => {
+              if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
+              return a.name.localeCompare(b.name)
+            })
           }
-          if (item.children) {
-            return { ...item, children: addToTree(item.children) }
-          }
-          return item
-        })
-      }
-      setFileTree(addToTree)
-    } else {
-      // Add to root
-      setFileTree(tree => sortItems([...tree, newFolder]))
+        }
+        if (item.children) {
+          return { ...item, children: addToTree(item.children) }
+        }
+        return item
+      })
     }
 
-    return newFolder
+    setFileTree(addToTree)
   }
 
   const renameItem = (item, newName) => {
     const updateInTree = (tree) => {
       return tree.map(treeItem => {
         if (treeItem.id === item.id) {
-          return { 
-            ...treeItem, 
-            name: newName,
-            language: treeItem.type === 'file' ? getLanguageFromExtension(newName) : undefined
-          }
+          return { ...treeItem, name: newName }
         }
         if (treeItem.children) {
           return { ...treeItem, children: updateInTree(treeItem.children) }
@@ -224,7 +159,7 @@ export const useFileManager = () => {
     }
 
     const newTab = { ...file }
-    setOpenTabs(prev => [...prev, newTab])
+    setOpenTabs([...openTabs, newTab])
     setActiveTab(newTab)
   }
 
@@ -252,55 +187,18 @@ export const useFileManager = () => {
     setFileTree(updateInTree)
   }
 
-  const getLanguageFromExtension = (fileName) => {
-    const ext = fileName.split('.').pop()?.toLowerCase()
-    const languageMap = {
-      js: 'javascript',
-      jsx: 'javascript',
-      ts: 'typescript',
-      tsx: 'typescript',
-      html: 'html',
-      css: 'css',
-      json: 'json',
-      py: 'python',
-      md: 'markdown'
-    }
-    return languageMap[ext] || 'text'
-  }
-
-  // Auto-save project to localStorage
+  // Auto-save to localStorage
   useEffect(() => {
-    const projectData = {
-      fileTree,
-      openTabs: openTabs.map(tab => tab.id),
-      activeTabId: activeTab?.id
-    }
-    localStorage.setItem('icoder-project-v2.1.1', JSON.stringify(projectData))
-  }, [fileTree, openTabs, activeTab])
+    localStorage.setItem('icoder-project-v2.1.1', JSON.stringify(fileTree))
+  }, [fileTree])
 
-  // Load project from localStorage
+  // Load from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('icoder-project-v2.1.1')
     if (saved) {
       try {
         const project = JSON.parse(saved)
-        if (project.fileTree) {
-          setFileTree(project.fileTree)
-          
-          // Restore open tabs
-          if (project.openTabs) {
-            const restoredTabs = project.openTabs
-              .map(tabId => findFileById(project.fileTree, tabId))
-              .filter(Boolean)
-            setOpenTabs(restoredTabs)
-            
-            // Restore active tab
-            if (project.activeTabId) {
-              const activeFile = findFileById(project.fileTree, project.activeTabId)
-              if (activeFile) setActiveTab(activeFile)
-            }
-          }
-        }
+        setFileTree(project)
       } catch (e) {
         console.warn('Failed to load project:', e)
       }
@@ -321,7 +219,6 @@ export const useFileManager = () => {
     closeTab,
     setActiveTab,
     toggleFolder,
-    updateFileContent,
-    findFileById
+    updateFileContent
   }
 }

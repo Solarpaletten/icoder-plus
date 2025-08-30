@@ -1,125 +1,93 @@
 export const initialFiles = [
   {
-    id: 'src',
-    name: 'src',
+    id: 'root',
+    name: 'My Project',
     type: 'folder',
     expanded: true,
-    children: [
-      {
-        id: 'app-jsx',
-        name: 'App.jsx',
-        type: 'file',
-        language: 'javascript',
-        content: `import React from 'react'
-import './App.css'
-
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Welcome to iCoder Plus v2.2</h1>
-        <p>Your AI-first IDE is ready!</p>
-        <div className="features">
-          <div className="feature">
-            <h3>📂 File Tree</h3>
-            <p>Full CRUD operations</p>
-          </div>
-          <div className="feature">
-            <h3>🤖 Dual Agent AI</h3>
-            <p>Dashka + Claudy system</p>
-          </div>
-          <div className="feature">
-            <h3>⚡ Live Preview</h3>
-            <p>Instant code execution</p>
-          </div>
-        </div>
-      </header>
-    </div>
-  )
-}
-
-export default App`
-      },
-      {
-        id: 'index-js',
-        name: 'index.js',
-        type: 'file',
-        language: 'javascript',
-        content: `import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App'
-import './index.css'
-
-const root = ReactDOM.createRoot(document.getElementById('root'))
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-)`
-      },
-      {
-        id: 'components',
-        name: 'components',
-        type: 'folder',
-        expanded: false,
-        children: []
-      }
-    ]
-  },
-  {
-    id: 'public',
-    name: 'public',
-    type: 'folder',
-    expanded: false,
     children: [
       {
         id: 'index-html',
         name: 'index.html',
         type: 'file',
-        language: 'html',
         content: `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>iCoder Plus v2.2</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iCoder Plus Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { color: #1f6feb; }
+        .btn { padding: 12px 24px; background: #1f6feb; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        .btn:hover { background: #1557d0; }
+    </style>
 </head>
 <body>
-  <div id="root"></div>
+    <div class="container">
+        <h1>🚀 iCoder Plus v2.1.1</h1>
+        <p>Welcome to your Dual-Agent AI IDE!</p>
+        <button class="btn" onclick="showMessage()">Test Button</button>
+        <div id="output"></div>
+    </div>
+    <script>
+        function showMessage() {
+            document.getElementById('output').innerHTML = '<p>✨ Hello from iCoder Plus!</p>';
+            console.log('Button clicked successfully!');
+        }
+    </script>
 </body>
 </html>`
+      },
+      {
+        id: 'app-js',
+        name: 'app.js', 
+        type: 'file',
+        content: `// iCoder Plus v2.1.1 Demo
+console.log('🚀 App loaded');
+
+function initApp() {
+    console.log('Initializing iCoder Plus...');
+    
+    // Add event listeners
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM ready!');
+    });
+}
+
+initApp();`
+      },
+      {
+        id: 'styles-folder',
+        name: 'styles',
+        type: 'folder',
+        expanded: false,
+        children: [
+          {
+            id: 'main-css',
+            name: 'main.css',
+            type: 'file',
+            content: `/* iCoder Plus Styles */
+:root {
+  --primary: #1f6feb;
+  --bg: #ffffff;
+  --text: #24292f;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}`
+          }
+        ]
       }
     ]
-  },
-  {
-    id: 'readme-md',
-    name: 'README.md',
-    type: 'file',
-    language: 'markdown',
-    content: `# iCoder Plus v2.2
-
-AI-first IDE with File Tree Management
-
-## Features
-
-- ✅ File Tree CRUD operations
-- ✅ Context menu (right-click)
-- ✅ Drag & drop support
-- ✅ Search functionality
-- ✅ Auto-save to localStorage
-- ✅ Multiple file tabs
-- 🔄 Live preview (coming next)
-- 🤖 Dual-Agent AI (Dashka + Claudy)
-
-## Usage
-
-1. Right-click in file tree for context menu
-2. Create files and folders
-3. Rename and delete items
-4. Search files by name
-5. Open multiple files in tabs
-
-Built with React + Express by Solar IT Team
-`
   }
 ]

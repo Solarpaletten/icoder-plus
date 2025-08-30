@@ -1,3 +1,15 @@
+#!/bin/bash
+
+echo "⚡ 1 СЕКУНДА - ИСПРАВЛЯЕМ ИКОНКИ МГНОВЕННО"
+
+cd frontend
+
+# ============================================================================
+# ПРОБЛЕМА: Tailwind CSS не загружается в production
+# РЕШЕНИЕ: Переписать fileUtils.jsx без Tailwind классов
+# ============================================================================
+
+cat > src/utils/fileUtils.jsx << 'EOF'
 import React from 'react'
 import { 
   FileText, 
@@ -134,3 +146,25 @@ export const isExecutableFile = (fileName) => {
   const ext = fileName.split('.').pop()?.toLowerCase()
   return ['html', 'js', 'jsx', 'mjs', 'ts', 'tsx'].includes(ext)
 }
+EOF
+
+# ============================================================================
+# ТЕСТ + КОММИТ + ДЕПЛОЙ
+# ============================================================================
+
+echo "Building..."
+npm run build > /dev/null 2>&1
+
+if [ $? -eq 0 ]; then
+    cd ..
+    echo "✅ ГОТОВО! КОММИТИМ..."
+    
+    git add .
+    git commit -m "Fix file icons with inline styles - no Tailwind dependency"
+    git push origin main
+    
+    echo "🚀 ДЕПЛОЙ НА RENDER ЗАПУЩЕН"
+    echo "⏱️ Иконки появятся через 2-3 минуты"
+else
+    echo "❌ Build failed"
+fi

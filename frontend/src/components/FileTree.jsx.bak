@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { ChevronRight, ChevronDown, File, Folder, Plus, X } from 'lucide-react'
-import { getFileIcon, getFolderIcon } from '../utils/fileUtils'
+import { getFileIcon } from '../utils/fileUtils'
 
 const FileTree = ({ 
   fileTree, 

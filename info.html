@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI IT Solar - Code Review Assistant</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #2d1b69 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #00d4aa, #007cf0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            color: #a0a9c0;
+            font-size: 1.1em;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .input-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .input-block {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .input-label {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .code-input {
+            width: 100%;
+            height: 300px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            border: none;
+            padding: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            line-height: 1.6;
+        }
+
+        .code-input:focus {
+            box-shadow: 0 0 20px rgba(0, 212, 170, 0.3);
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .analyze-btn {
+            background: linear-gradient(135deg, #00d4aa, #007cf0);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(0, 212, 170, 0.3);
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 212, 170, 0.5);
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .summary-title {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .stat-label {
+            color: #a0a9c0;
+            font-size: 0.9em;
+        }
+
+        .green { color: #00d4aa; }
+        .red { color: #ff6b6b; }
+        .orange { color: #ffa726; }
+        .blue { color: #4dabf7; }
+
+        .changes-list {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .changes-list h3 {
+            color: #00d4aa;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .change-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .change-item.added { border-left-color: #00d4aa; }
+        .change-item.modified { border-left-color: #ffa726; }
+        .change-item.removed { border-left-color: #ff6b6b; }
+        .change-item.import { border-left-color: #4dabf7; }
+
+        .change-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .change-icon.added { background: #00d4aa; color: #000; }
+        .change-icon.modified { background: #ffa726; color: #000; }
+        .change-icon.removed { background: #ff6b6b; color: #fff; }
+        .change-icon.import { background: #4dabf7; color: #fff; }
+
+        .diff-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .diff-side {
+            padding: 25px;
+        }
+
+        .diff-side h3 {
+            background: rgba(255, 255, 255, 0.1);
+            margin: -25px -25px 20px -25px;
+            padding: 20px 25px;
+            color: #fff;
+            text-align: center;
+            font-size: 1.2em;
+        }
+
+        .line {
+            display: flex;
+            margin-bottom: 2px;
+            min-height: 24px;
+            border-radius: 5px;
+            transition: all 0.2s ease;
+        }
+
+        .line:hover {
+            transform: translateX(5px);
+        }
+
+        .line-number {
+            width: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #888;
+            text-align: center;
+            padding: 4px 8px;
+            font-size: 12px;
+            flex-shrink: 0;
+            border-radius: 5px 0 0 5px;
+        }
+
+        .line-content {
+            flex: 1;
+            padding: 4px 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .line-same {
+            background: rgba(0, 212, 170, 0.1);
+            border-left: 3px solid #00d4aa;
+        }
+
+        .line-same .line-number {
+            background: rgba(0, 212, 170, 0.3);
+            color: #00d4aa;
+        }
+
+        .line-different {
+            background: rgba(255, 107, 107, 0.1);
+            border-left: 3px solid #ff6b6b;
+        }
+
+        .line-different .line-number {
+            background: rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+        }
+
+        .highlight {
+            background: rgba(255, 193, 7, 0.4);
+            padding: 2px 4px;
+            border-radius: 3px;
+            box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
+        }
+
+        @media (max-width: 1200px) {
+            .input-section, .diff-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+
+        .risk-indicator {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .risk-low { background: rgba(0, 212, 170, 0.2); color: #00d4aa; }
+        .risk-medium { background: rgba(255, 167, 38, 0.2); color: #ffa726; }
+        .risk-high { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 AI IT Solar</h1>
+            <div class="subtitle">Продвинутый анализатор кода и ревью-ассистент</div>
+        </div>
+
+        <div class="input-section">
+            <div class="input-block">
+                <div class="input-label">📄 Исходный код (было)</div>
+                <textarea id="code1" class="code-input" placeholder="Вставьте исходный код здесь..."></textarea>
+            </div>
+            <div class="input-block">
+                <div class="input-label">🔄 Новый код (стало)</div>
+                <textarea id="code2" class="code-input" placeholder="Вставьте новый код здесь..."></textarea>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="analyze-btn" onclick="analyzeCode()">🔍 Анализировать изменения</button>
+        </div>
+
+        <div id="results" class="results">
+            <div class="summary-card">
+                <div class="summary-title">📊 Сводка изменений</div>
+                <div id="stats" class="stats-grid"></div>
+                <div id="riskAssessment" class="risk-indicator"></div>
+            </div>
+
+            <div id="changesList" class="changes-list"></div>
+
+            <div id="diff" class="diff-container"></div>
+        </div>
+    </div>
+
+    <script>
+        function analyzeCode() {
+            const code1 = document.getElementById('code1').value;
+            const code2 = document.getElementById('code2').value;
+
+            if (!code1.trim() || !code2.trim()) {
+                alert('Пожалуйста, вставьте код в оба блока');
+                return;
+            }
+
+            const analysis = performAdvancedAnalysis(code1, code2);
+            displayResults(analysis);
+            
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('results').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+
+        function performAdvancedAnalysis(oldCode, newCode) {
+            const oldLines = oldCode.split('\n');
+            const newLines = newCode.split('\n');
+            const maxLines = Math.max(oldLines.length, newLines.length);
+
+            let stats = {
+                totalLines: maxLines,
+                sameLines: 0,
+                changedLines: 0,
+                addedLines: 0,
+                removedLines: 0
+            };
+
+            let changes = {
+                functions: [],
+                imports: [],
+                classes: [],
+                variables: [],
+                other: []
+            };
+
+            let diffHtml = { left: '', right: '' };
+
+            // Анализ построчно
+            for (let i = 0; i < maxLines; i++) {
+                const oldLine = oldLines[i] || '';
+                const newLine = newLines[i] || '';
+                const lineNum = i + 1;
+
+                let lineClass = '';
+                let content1 = escapeHtml(oldLine);
+                let content2 = escapeHtml(newLine);
+
+                if (oldLine === newLine) {
+                    lineClass = 'line-same';
+                    stats.sameLines++;
+                } else {
+                    lineClass = 'line-different';
+                    stats.changedLines++;
+                    
+                    if (oldLine && newLine) {
+                        const diff = highlightDifferences(oldLine, newLine);
+                        content1 = diff.text1;
+                        content2 = diff.text2;
+                    }
+
+                    // Семантический анализ изменений
+                    analyzeSemanticChange(oldLine, newLine, changes, lineNum);
+                }
+
+                if (!oldLine && newLine) stats.addedLines++;
+                if (oldLine && !newLine) stats.removedLines++;
+
+                diffHtml.left += createLineHtml(lineNum, content1, lineClass);
+                diffHtml.right += createLineHtml(lineNum, content2, lineClass);
+            }
+
+            // Расчет риска изменений
+            const riskLevel = calculateRisk(changes, stats);
+
+            return { stats, changes, diffHtml, riskLevel };
+        }
+
+        function analyzeSemanticChange(oldLine, newLine, changes, lineNum) {
+            const oldTrimmed = oldLine.trim();
+            const newTrimmed = newLine.trim();
+
+            // Анализ импортов
+            if (oldTrimmed.match(/^(import|from|#include|using)/i) || 
+                newTrimmed.match(/^(import|from|#include|using)/i)) {
+                if (oldTrimmed !== newTrimmed) {
+                    changes.imports.push({
+                        type: oldTrimmed && newTrimmed ? 'modified' : (oldTrimmed ? 'removed' : 'added'),
+                        line: lineNum,
+                        old: oldTrimmed,
+                        new: newTrimmed,
+                        description: getImportDescription(oldTrimmed, newTrimmed)
+                    });
+                }
+            }
+
+            // Анализ функций
+            if (oldTrimmed.match(/^(def|function|func|\w+\s*\()/i) || 
+                newTrimmed.match(/^(def|function|func|\w+\s*\()/i)) {
+                if (oldTrimmed !== newTrimmed) {
+                    changes.functions.push({
+                        type: oldTrimmed && newTrimmed ? 'modified' : (oldTrimmed ? 'removed' : 'added'),
+                        line: lineNum,
+                        old: oldTrimmed,
+                        new: newTrimmed,
+                        description: getFunctionDescription(oldTrimmed, newTrimmed)
+                    });
+                }
+            }
+
+            // Анализ классов
+            if (oldTrimmed.match(/^(class|struct)/i) || 
+                newTrimmed.match(/^(class|struct)/i)) {
+                if (oldTrimmed !== newTrimmed) {
+                    changes.classes.push({
+                        type: oldTrimmed && newTrimmed ? 'modified' : (oldTrimmed ? 'removed' : 'added'),
+                        line: lineNum,
+                        old: oldTrimmed,
+                        new: newTrimmed,
+                        description: getClassDescription(oldTrimmed, newTrimmed)
+                    });
+                }
+            }
+
+            // Анализ переменных
+            if (oldTrimmed.match(/^\s*\w+\s*=/) || newTrimmed.match(/^\s*\w+\s*=/)) {
+                if (oldTrimmed !== newTrimmed) {
+                    changes.variables.push({
+                        type: oldTrimmed && newTrimmed ? 'modified' : (oldTrimmed ? 'removed' : 'added'),
+                        line: lineNum,
+                        old: oldTrimmed,
+                        new: newTrimmed,
+                        description: getVariableDescription(oldTrimmed, newTrimmed)
+                    });
+                }
+            }
+        }
+
+        function getImportDescription(oldLine, newLine) {
+            if (!oldLine) return `Добавлен импорт: ${newLine}`;
+            if (!newLine) return `Удален импорт: ${oldLine}`;
+            return `Изменен импорт: ${oldLine} → ${newLine}`;
+        }
+
+        function getFunctionDescription(oldLine, newLine) {
+            if (!oldLine) return `Добавлена функция: ${extractFunctionName(newLine)}`;
+            if (!newLine) return `Удалена функция: ${extractFunctionName(oldLine)}`;
+            return `Изменена функция: ${extractFunctionName(oldLine)}`;
+        }
+
+        function getClassDescription(oldLine, newLine) {
+            if (!oldLine) return `Добавлен класс: ${extractClassName(newLine)}`;
+            if (!newLine) return `Удален класс: ${extractClassName(oldLine)}`;
+            return `Изменен класс: ${extractClassName(oldLine)}`;
+        }
+
+        function getVariableDescription(oldLine, newLine) {
+            if (!oldLine) return `Добавлена переменная: ${extractVariableName(newLine)}`;
+            if (!newLine) return `Удалена переменная: ${extractVariableName(oldLine)}`;
+            return `Изменена переменная: ${extractVariableName(oldLine)}`;
+        }
+
+        function extractFunctionName(line) {
+            const match = line.match(/(?:def|function|func)\s+(\w+)/i) || line.match(/(\w+)\s*\(/);
+            return match ? match[1] : 'неизвестная';
+        }
+
+        function extractClassName(line) {
+            const match = line.match(/(?:class|struct)\s+(\w+)/i);
+            return match ? match[1] : 'неизвестный';
+        }
+
+        function extractVariableName(line) {
+            const match = line.match(/(\w+)\s*=/);
+            return match ? match[1] : 'неизвестная';
+        }
+
+        function calculateRisk(changes, stats) {
+            let riskScore = 0;
+            
+            // Функции = высокий риск
+            riskScore += changes.functions.length * 3;
+            
+            // Классы = высокий риск
+            riskScore += changes.classes.length * 3;
+            
+            // Импорты = средний риск
+            riskScore += changes.imports.length * 2;
+            
+            // Переменные = низкий риск
+            riskScore += changes.variables.length * 1;
+
+            // Процент изменений
+            const changePercent = (stats.changedLines / stats.totalLines) * 100;
+            if (changePercent > 50) riskScore += 5;
+            else if (changePercent > 25) riskScore += 2;
+
+            if (riskScore <= 3) return { level: 'low', text: '🟢 Низкий риск: косметические изменения' };
+            if (riskScore <= 8) return { level: 'medium', text: '🟡 Средний риск: умеренные изменения' };
+            return { level: 'high', text: '🔴 Высокий риск: серьезные структурные изменения' };
+        }
+
+        function displayResults(analysis) {
+            // Статистика
+            const { stats, changes, diffHtml, riskLevel } = analysis;
+            const percentSame = Math.round((stats.sameLines / stats.totalLines) * 100);
+            const percentChanged = Math.round((stats.changedLines / stats.totalLines) * 100);
+
+            document.getElementById('stats').innerHTML = `
+                <div class="stat-card">
+                    <span class="stat-number green">${stats.sameLines}</span>
+                    <div class="stat-label">Неизменных строк<br>(${percentSame}%)</div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number red">${stats.changedLines}</span>
+                    <div class="stat-label">Изменений<br>(${percentChanged}%)</div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number blue">${changes.functions.length}</span>
+                    <div class="stat-label">Функций<br>изменено</div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number orange">${changes.imports.length}</span>
+                    <div class="stat-label">Импортов<br>изменено</div>
+                </div>
+            `;
+
+            // Оценка риска
+            document.getElementById('riskAssessment').className = `risk-indicator risk-${riskLevel.level}`;
+            document.getElementById('riskAssessment').textContent = riskLevel.text;
+
+            // Список изменений
+            let changesHtml = '<h3>🔍 Детальный анализ изменений</h3>';
+            
+            const allChanges = [
+                ...changes.functions.map(c => ({...c, category: 'Функция', icon: 'F'})),
+                ...changes.classes.map(c => ({...c, category: 'Класс', icon: 'C'})),
+                ...changes.imports.map(c => ({...c, category: 'Импорт', icon: 'I'})),
+                ...changes.variables.map(c => ({...c, category: 'Переменная', icon: 'V'}))
+            ];
+
+            if (allChanges.length === 0) {
+                changesHtml += '<div style="text-align: center; color: #a0a9c0; padding: 20px;">Семантических изменений не обнаружено</div>';
+            } else {
+                allChanges.forEach(change => {
+                    changesHtml += `
+                        <div class="change-item ${change.type}">
+                            <div class="change-icon ${change.type}">${change.icon}</div>
+                            <div>
+                                <strong>${change.category} (строка ${change.line})</strong><br>
+                                <span style="color: #a0a9c0;">${change.description}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            document.getElementById('changesList').innerHTML = changesHtml;
+
+            // Diff визуализация
+            document.getElementById('diff').innerHTML = `
+                <div class="diff-side">
+                    <h3>📄 Исходный код</h3>
+                    ${diffHtml.left}
+                </div>
+                <div class="diff-side">
+                    <h3>🔄 Новый код</h3>
+                    ${diffHtml.right}
+                </div>
+            `;
+        }
+
+        function createLineHtml(lineNum, content, lineClass) {
+            return `
+                <div class="line ${lineClass}">
+                    <div class="line-number">${lineNum}</div>
+                    <div class="line-content">${content}</div>
+                </div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function highlightDifferences(str1, str2) {
+            const words1 = str1.split(/(\s+)/);
+            const words2 = str2.split(/(\s+)/);
+            const maxLength = Math.max(words1.length, words2.length);
+
+            let result1 = '';
+            let result2 = '';
+
+            for (let i = 0; i < maxLength; i++) {
+                const word1 = words1[i] || '';
+                const word2 = words2[i] || '';
+
+                if (word1 !== word2) {
+                    result1 += `<span class="highlight">${escapeHtml(word1)}</span>`;
+                    result2 += `<span class="highlight">${escapeHtml(word2)}</span>`;
+                } else {
+                    result1 += escapeHtml(word1);
+                    result2 += escapeHtml(word2);
+                }
+            }
+
+            return { text1: result1, text2: result2 };
+        }
+
+        // Горячие клавиши
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                analyzeCode();
+            }
+        });
+    </script>
+</body>
+</html>

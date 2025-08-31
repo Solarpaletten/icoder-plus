@@ -2,26 +2,106 @@ import React, { useState } from 'react'
 import { useFileManager } from './hooks/useFileManager'
 import { useCodeRunner } from './hooks/useCodeRunner'
 import { useDualAgent } from './hooks/useDualAgent'
+import { useFileSystem } from './hooks/useFileSystem'
+import TopMenu from './components/TopMenu'
 import FileTree from './components/FileTree'
 import Editor from './components/Editor'
 import LivePreview from './components/LivePreview'
-import { Menu, X, Terminal, Eye } from 'lucide-react'
+import Terminal from './components/Terminal'
+import { Menu, X, Eye } from 'lucide-react'
 import './styles/globals.css'
 
 function App() {
   const fileManager = useFileManager()
   const codeRunner = useCodeRunner()
   const { agent, setAgent } = useDualAgent()
+  const fileSystem = useFileSystem()
   
   // Panel toggles
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [terminalOpen, setTerminalOpen] = useState(true)
+  const [terminalOpen, setTerminalOpen] = useState(false)
   const [rightPanelOpen, setRightPanelOpen] = useState(true)
-  const [previewPanelOpen, setPreviewPanelOpen] = useState(false) // NEW: Preview panel toggle
+  const [previewPanelOpen, setPreviewPanelOpen] = useState(false)
+
+  // File operations from TopMenu
+  const handleOpenFile = (file) => {
+    fileManager.openFile(file)
+  }
+
+  const handleOpenFolder = (folderStructure) => {
+    fileManager.setFileTree(folderStructure)
+    // Open first file if available
+    const firstFile = findFirstFile(folderStructure)
+    if (firstFile) {
+      fileManager.openFile(firstFile)
+    }
+  }
+
+  const findFirstFile = (items) => {
+    for (const item of items) {
+      if (item.type === 'file') return item
+      if (item.children) {
+        const found = findFirstFile(item.children)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  const handleSaveProject = (format = 'localStorage') => {
+    if (format === 'zip') {
+      fileSystem.saveProjectAsZip(fileManager.fileTree)
+    } else {
+      // Save to localStorage (already handled by useFileManager)
+      localStorage.setItem('icoder-project-v2.2', JSON.stringify(fileManager.fileTree))
+      console.log('Project saved to localStorage')
+    }
+  }
+
+  const handleNewProject = (type) => {
+    if (type === 'file') {
+      fileManager.createFile(null, 'untitled.js', '// New file\nconsole.log("Hello World!");')
+    } else if (type === 'folder') {
+      fileManager.createFolder(null, 'New Folder')
+    }
+  }
+
+  const handleImportProject = async (zipFile) => {
+    const folderStructure = await fileSystem.loadProjectFromZip(zipFile)
+    if (folderStructure.length > 0) {
+      fileManager.setFileTree(folderStructure)
+      const firstFile = findFirstFile(folderStructure)
+      if (firstFile) {
+        fileManager.openFile(firstFile)
+      }
+    }
+  }
+
+  const handleTerminalOpenFile = (file) => {
+    fileManager.openFile(file)
+  }
+
+  const handleTerminalBuild = () => {
+    console.log('Building project via terminal...')
+    // Trigger actual build if needed
+    codeRunner.runCode({
+      name: 'build-script.js',
+      content: 'console.log("Project built successfully!")'
+    })
+  }
 
   return (
     <div className="app-container">
-      {/* Menu Bar */}
+      {/* Top Menu Bar */}
+      <TopMenu
+        onOpenFile={handleOpenFile}
+        onOpenFolder={handleOpenFolder}
+        onSaveProject={handleSaveProject}
+        onNewProject={handleNewProject}
+        onImportProject={handleImportProject}
+      />
+
+      {/* Main Menu Bar */}
       <div className="menu-bar">
         <div className="menu-left">
           <button 
@@ -31,24 +111,22 @@ function App() {
           >
             <Menu size={16} />
           </button>
-          <span className="app-title">iCoder Plus v2.2</span>
-          <span className="app-subtitle">AI IDE with Live Preview</span>
         </div>
         
         <div className="menu-right">
           <button 
-            className="menu-btn"
+            className={`menu-btn ${previewPanelOpen ? 'active' : ''}`}
             onClick={() => setPreviewPanelOpen(!previewPanelOpen)}
             title="Toggle Live Preview"
           >
             <Eye size={16} />
           </button>
           <button 
-            className="menu-btn"
+            className={`menu-btn ${terminalOpen ? 'active' : ''}`}
             onClick={() => setTerminalOpen(!terminalOpen)}
             title="Toggle Terminal"
           >
-            <Terminal size={16} />
+            ⚡
           </button>
           <button 
             className="menu-btn"
@@ -91,7 +169,7 @@ function App() {
           />
         </div>
 
-        {/* NEW: Live Preview Panel (conditionally rendered) */}
+        {/* Live Preview Panel */}
         {previewPanelOpen && (
           <div className="preview-panel">
             <LivePreview
@@ -152,33 +230,14 @@ function App() {
       </div>
 
       {/* Bottom Terminal */}
-      {terminalOpen && (
-        <div className="terminal-panel">
-          <div className="terminal-header">
-            <span>TERMINAL</span>
-            <div className="terminal-actions">
-              <button onClick={() => setTerminalOpen(false)}>
-                <X size={14} />
-              </button>
-            </div>
-          </div>
-          <div className="terminal-content">
-            <div className="terminal-line">
-              <span className="prompt">icoderplus@localhost:~$</span>
-              <span className="command"> npm run dev</span>
-            </div>
-            <div className="terminal-line">
-              <span className="output">🚀 Local:   http://localhost:5173/</span>
-            </div>
-            <div className="terminal-line">
-              <span className="output">📡 Network: http://192.168.1.100:5173/</span>
-            </div>
-            <div className="terminal-line">
-              <span className="success">✅ ready in 1.2s</span>
-            </div>
-          </div>
-        </div>
-      )}
+      <Terminal
+        isOpen={terminalOpen}
+        onToggle={() => setTerminalOpen(!terminalOpen)}
+        fileTree={fileManager.fileTree}
+        activeFile={fileManager.activeTab}
+        onOpenFile={handleTerminalOpenFile}
+        onRunBuild={handleTerminalBuild}
+      />
     </div>
   )
 }

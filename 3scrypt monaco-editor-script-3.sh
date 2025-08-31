@@ -823,7 +823,7 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "🚀 ГОТОВ К КОММИТУ:"
     echo "   git add ."
-    echo "   git commit -m 'Add Monaco Editor with full IDE features'"
+    echo "   git commit -m '3 scrypt Add Monaco Editor with full IDE features'"
     echo "   git push origin main"
     echo ""
     echo "📋 ПЕРЕХОДИМ К СКРИПТУ #4: Tabs & Auto-save (17:00-21:00)"

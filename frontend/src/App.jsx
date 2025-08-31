@@ -1,26 +1,59 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useFileManager } from './hooks/useFileManager'
 import { useCodeRunner } from './hooks/useCodeRunner'
+import { useDualAgent } from './hooks/useDualAgent'
 import FileTree from './components/FileTree'
 import Editor from './components/Editor'
+import { Menu, X, Terminal } from 'lucide-react'
 import './styles/globals.css'
 
 function App() {
   const fileManager = useFileManager()
   const codeRunner = useCodeRunner()
+  const { agent, setAgent } = useDualAgent()
+  
+  // NEW: State for panel toggles
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [terminalOpen, setTerminalOpen] = useState(true)
+  const [rightPanelOpen, setRightPanelOpen] = useState(true)
 
   return (
     <div className="app-container">
-      <div className="app-header">
-        <div className="app-title">
-          <h1>iCoder Plus v2.2</h1>
+      {/* NEW: Menu Bar */}
+      <div className="menu-bar">
+        <div className="menu-left">
+          <button 
+            className="menu-toggle"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            title="Toggle Explorer"
+          >
+            <Menu size={16} />
+          </button>
+          <span className="app-title">iCoder Plus v2.2</span>
           <span className="app-subtitle">AI IDE with Monaco Editor</span>
+        </div>
+        
+        <div className="menu-right">
+          <button 
+            className="menu-btn"
+            onClick={() => setTerminalOpen(!terminalOpen)}
+            title="Toggle Terminal"
+          >
+            <Terminal size={16} />
+          </button>
+          <button 
+            className="menu-btn"
+            onClick={() => setRightPanelOpen(!rightPanelOpen)}
+            title="Toggle AI Assistant"
+          >
+            {rightPanelOpen ? <X size={16} /> : '🤖'}
+          </button>
         </div>
       </div>
       
       <div className="app-content">
-        {/* Left Panel - File Tree */}
-        <div className="left-panel">
+        {/* Left Panel - File Tree (EXISTING + collapsed state) */}
+        <div className={`left-panel ${sidebarCollapsed ? 'collapsed' : ''}`}>
           <FileTree
             fileTree={fileManager.fileTree}
             searchQuery={fileManager.searchQuery}
@@ -35,7 +68,7 @@ function App() {
           />
         </div>
 
-        {/* Main Panel - Editor */}
+        {/* Main Panel - Editor (EXISTING) */}
         <div className="main-panel">
           <Editor
             openTabs={fileManager.openTabs}
@@ -46,7 +79,79 @@ function App() {
             onRunCode={codeRunner.runCode}
           />
         </div>
+
+        {/* NEW: Right Panel - AI Assistant */}
+        {rightPanelOpen && (
+          <div className="right-panel">
+            <div className="right-panel-header">
+              <h3>AI ASSISTANT</h3>
+              <div className="agent-switcher">
+                <button 
+                  className={agent === 'dashka' ? 'active' : ''}
+                  onClick={() => setAgent('dashka')}
+                >
+                  🏗️ Dashka
+                </button>
+                <button 
+                  className={agent === 'claudy' ? 'active' : ''}
+                  onClick={() => setAgent('claudy')}
+                >
+                  🤖 Claudy
+                </button>
+              </div>
+            </div>
+            <div className="ai-content">
+              <div className="ai-chat-area">
+                <div className="chat-messages">
+                  <div className="welcome-message">
+                    <h4>👋 {agent === 'dashka' ? 'Dashka (Architect)' : 'Claudy (Generator)'} готов к работе</h4>
+                    <p>{agent === 'dashka' 
+                      ? 'Анализирую архитектуру, планирую структуру, даю советы по коду'
+                      : 'Генерирую компоненты, функции, помогаю с кодом'
+                    }</p>
+                  </div>
+                </div>
+                <div className="chat-input">
+                  <textarea 
+                    placeholder={`Спросите ${agent === 'dashka' ? 'Dashka' : 'Claudy'}...`}
+                    rows="3"
+                  />
+                  <button className="send-btn">Отправить</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* NEW: Bottom Terminal (with toggle) */}
+      {terminalOpen && (
+        <div className="terminal-panel">
+          <div className="terminal-header">
+            <span>TERMINAL</span>
+            <div className="terminal-actions">
+              <button onClick={() => setTerminalOpen(false)}>
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+          <div className="terminal-content">
+            <div className="terminal-line">
+              <span className="prompt">icoderplus@localhost:~$</span>
+              <span className="command"> npm run dev</span>
+            </div>
+            <div className="terminal-line">
+              <span className="output">🚀 Local:   http://localhost:5173/</span>
+            </div>
+            <div className="terminal-line">
+              <span className="output">📡 Network: http://192.168.1.100:5173/</span>
+            </div>
+            <div className="terminal-line">
+              <span className="success">✅ ready in 1.2s</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

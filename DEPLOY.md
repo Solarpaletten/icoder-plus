@@ -38,7 +38,7 @@ VITE_APP_VERSION=2.0.0
 NODE_ENV=production
 OPENAI_API_KEY=your_openai_key
 ANTHROPIC_API_KEY=your_claude_key
-PORT=3000
+PORT=3007
 ```
 
 ## Custom Domains

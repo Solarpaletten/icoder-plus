@@ -1,22 +1,22 @@
 import React, { useState } from 'react'
-import { ChevronRight, ChevronDown, File, Folder, Plus, X } from 'lucide-react'
+import { ChevronRight, ChevronDown, File, Folder, Plus, X, Copy,  Edit3, Trash2 } from 'lucide-react'
 import { getFileIcon, getFolderIcon } from '../utils/fileUtils'
 
-const FileTree = ({
-  fileTree,
-  searchQuery,
-  setSearchQuery,
-  openFile,
+const FileTree = ({ 
+  fileTree, 
+  searchQuery, 
+  setSearchQuery, 
+  openFile, 
   createFile,
   createFolder,
   renameItem,
   deleteItem,
   toggleFolder,
-  selectedFileId
+  selectedFileId 
 }) => {
   const [contextMenu, setContextMenu] = useState(null)
   const [renaming, setRenaming] = useState(null)
-  const [creating, setCreating] = useState(null) // NEW: inline creation state
+  const [creating, setCreating] = useState(null) // EXISTING: inline creation state
 
   const handleRightClick = (e, item) => {
     e.preventDefault()
@@ -32,7 +32,7 @@ const FileTree = ({
     setContextMenu(null)
   }
 
-  // VS CODE STYLE: Inline creation - появляется поле ввода прямо в дереве
+  // EXISTING: VS CODE STYLE Inline creation
   const startInlineCreation = (type, parentId = null) => {
     setCreating({
       type: type, // 'file' or 'folder'
@@ -80,6 +80,24 @@ const FileTree = ({
     closeContextMenu()
   }
 
+  // NEW: Copy folder with all contents - VS Code behavior
+  const copyFolder = (item) => {
+    const copyToClipboard = (data) => {
+      navigator.clipboard.writeText(JSON.stringify(data, null, 2))
+      console.log(`Copied ${item.type} "${item.name}" to clipboard`)
+    }
+    
+    if (item.type === 'folder') {
+      // Copy entire folder structure
+      copyToClipboard(item)
+    } else {
+      // Copy single file
+      copyToClipboard({ name: item.name, content: item.content })
+    }
+    closeContextMenu()
+  }
+
+  // EXISTING: renderTreeItem with inline creation
   const renderTreeItem = (item, level = 0) => {
     const isSelected = selectedFileId === item.id
     const isRenaming = renaming?.id === item.id
@@ -98,31 +116,31 @@ const FileTree = ({
           }}
           onContextMenu={(e) => handleRightClick(e, item)}
         >
-          {/* Folder Arrow */}
+          {/* EXISTING: Folder Arrow */}
           {item.type === 'folder' && (
             <span className="tree-arrow">
-              {item.expanded ?
-                <ChevronDown size={14} /> :
+              {item.expanded ? 
+                <ChevronDown size={14} /> : 
                 <ChevronRight size={14} />
               }
             </span>
           )}
-
-          {/* File/Folder Icon */}
+          
+          {/* EXISTING: File/Folder Icon */}
           <span className="tree-icon">
-            {item.type === 'folder' ?
-              getFolderIcon(item.name, item.expanded) :  
+            {item.type === 'folder' ? 
+              getFolderIcon(item.name, item.expanded) : 
               getFileIcon(item.name)
             }
           </span>
-
-          {/* Name (editable when renaming) */}
+          
+          {/* EXISTING: Name (editable when renaming) */}
           {isRenaming ? (
             <input
               type="text"
               className="tree-rename-input"
               value={renaming.newName}
-              onChange={(e) => setRenaming({ ...renaming, newName: e.target.value })}
+              onChange={(e) => setRenaming({...renaming, newName: e.target.value})}
               onKeyDown={handleRename}
               onBlur={() => setRenaming(null)}
               autoFocus
@@ -131,17 +149,17 @@ const FileTree = ({
             <span className="tree-name">{item.name}</span>
           )}
         </div>
-
-        {/* VS CODE STYLE: Inline creation field появляется прямо в дереве */}
+        
+        {/* EXISTING: VS CODE STYLE Inline creation field */}
         {creating && creating.parentId === item.id && item.type === 'folder' && item.expanded && (
-          <div
+          <div 
             className="tree-item creating"
             style={{ paddingLeft: (level + 1) * 16 + 8 }}
           >
             <span className="tree-icon">
-              {creating.type === 'folder' ?
-                <Folder size={16} className="text-blue-400" /> :
-                <File size={16} className="text-gray-400" />
+              {creating.type === 'folder' ? 
+                <Folder size={16} style={{color: '#60a5fa'}} /> : 
+                <File size={16} style={{color: '#9ca3af'}} />
               }
             </span>
             <input
@@ -149,58 +167,33 @@ const FileTree = ({
               className="tree-creation-input"
               placeholder={creating.type === 'file' ? 'filename.js' : 'foldername'}
               value={creating.name}
-              onChange={(e) => setCreating({ ...creating, name: e.target.value })}
+              onChange={(e) => setCreating({...creating, name: e.target.value})}
               onKeyDown={handleInlineCreation}
               onBlur={() => setCreating(null)}
               autoFocus
             />
           </div>
         )}
-
-        {/* Children (for folders) */}
+        
+        {/* EXISTING: Children (for folders) */}
         {item.type === 'folder' && item.expanded && item.children && (
           <div className="tree-children">
             {item.children.map(child => renderTreeItem(child, level + 1))}
-
-            {/* Inline creation for root level if no parent */}
-            {creating && creating.parentId === item.id && (
-              <div
-                className="tree-item creating"
-                style={{ paddingLeft: (level + 1) * 16 + 8 }}
-              >
-                <span className="tree-icon">
-                  {creating.type === 'folder' ?
-                    <Folder size={16} className="text-blue-400" /> :
-                    <File size={16} className="text-gray-400" />
-                  }
-                </span>
-                <input
-                  type="text"
-                  className="tree-creation-input"
-                  placeholder={creating.type === 'file' ? 'filename.js' : 'foldername'}
-                  value={creating.name}
-                  onChange={(e) => setCreating({ ...creating, name: e.target.value })}
-                  onKeyDown={handleInlineCreation}
-                  onBlur={() => setCreating(null)}
-                  autoFocus
-                />
-              </div>
-            )}
           </div>
         )}
       </div>
     )
   }
 
-  // Inline creation for root level
+  // EXISTING: Inline creation for root level
   const renderRootCreation = () => {
     if (creating && creating.parentId === null) {
       return (
         <div className="tree-item creating" style={{ paddingLeft: 8 }}>
           <span className="tree-icon">
-            {creating.type === 'folder' ?
-              <Folder size={16} className="text-blue-400" /> :
-              <File size={16} className="text-gray-400" />
+            {creating.type === 'folder' ? 
+              <Folder size={16} style={{color: '#60a5fa'}} /> : 
+              <File size={16} style={{color: '#9ca3af'}} />
             }
           </span>
           <input
@@ -208,7 +201,7 @@ const FileTree = ({
             className="tree-creation-input"
             placeholder={creating.type === 'file' ? 'filename.js' : 'foldername'}
             value={creating.name}
-            onChange={(e) => setCreating({ ...creating, name: e.target.value })}
+            onChange={(e) => setCreating({...creating, name: e.target.value})}
             onKeyDown={handleInlineCreation}
             onBlur={() => setCreating(null)}
             autoFocus
@@ -219,28 +212,28 @@ const FileTree = ({
     return null
   }
 
-  const filteredTree = fileTree.filter(item =>
+  const filteredTree = fileTree.filter(item => 
     !searchQuery || item.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   return (
     <div className="file-tree">
-      {/* Header with + buttons like VS Code */}
+      {/* EXISTING: Header with + buttons */}
       <div className="tree-header">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
           <span className="font-semibold text-sm text-gray-300">EXPLORER</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <button
-              className="tree-btn"
+          <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+            <button 
+              className="tree-btn" 
               onClick={() => startInlineCreation('file', null)}
               title="New File (Ctrl+N)"
             >
               <Plus size={14} />
             </button>
-            <button
+            <button 
               className="tree-btn"
               onClick={() => startInlineCreation('folder', null)}
-              title="New Folder"
+              title="New Folder" 
             >
               <Folder size={14} />
             </button>
@@ -248,7 +241,7 @@ const FileTree = ({
         </div>
       </div>
 
-      {/* Search */}
+      {/* EXISTING: Search */}
       <div className="search-box">
         <input
           type="text"
@@ -259,7 +252,7 @@ const FileTree = ({
         />
       </div>
 
-      {/* File Tree */}
+      {/* EXISTING: File Tree */}
       <div className="tree-content">
         {filteredTree.length > 0 ? (
           <>
@@ -273,35 +266,57 @@ const FileTree = ({
         )}
       </div>
 
-      {/* Context Menu */}
+      {/* ENHANCED: Context Menu with copy operations */}
       {contextMenu && (
         <>
           <div className="context-menu-overlay" onClick={closeContextMenu} />
-          <div
+          <div 
             className="context-menu"
-            style={{
-              left: contextMenu.x,
-              top: contextMenu.y
+            style={{ 
+              left: contextMenu.x, 
+              top: contextMenu.y 
             }}
           >
             <div className="context-menu-item" onClick={() => startRename(contextMenu.item)}>
+              <Edit3 size={14} />
               Rename
             </div>
             <div className="context-menu-item" onClick={() => handleDelete(contextMenu.item)}>
+              <Trash2 size={14} />
               Delete
             </div>
             <div className="context-menu-divider" />
+            
+            {/* NEW: Copy operations */}
+            <div className="context-menu-item" onClick={() => copyFolder(contextMenu.item)}>
+              {contextMenu.item.type === 'folder' ? (
+                <>
+                  <Folder size={14} />
+                  Copy Folder
+                </>
+              ) : (
+                <>
+                  <Copy size={14} />
+                  Copy File
+                </>
+              )}
+            </div>
+            
+            <div className="context-menu-divider" />
             <div className="context-menu-item" onClick={() => startInlineCreation('file', contextMenu.item.type === 'folder' ? contextMenu.item.id : null)}>
+              <Plus size={14} />
               New File
             </div>
             <div className="context-menu-item" onClick={() => startInlineCreation('folder', contextMenu.item.type === 'folder' ? contextMenu.item.id : null)}>
+              <Folder size={14} />
               New Folder
             </div>
+            
             {contextMenu.item.type === 'file' && (
               <>
                 <div className="context-menu-divider" />
                 <div className="context-menu-item">
-                  Run in Preview
+                  ▶️ Run in Preview
                 </div>
               </>
             )}

@@ -4,7 +4,8 @@ import { useCodeRunner } from './hooks/useCodeRunner'
 import { useDualAgent } from './hooks/useDualAgent'
 import FileTree from './components/FileTree'
 import Editor from './components/Editor'
-import { Menu, X, Terminal } from 'lucide-react'
+import LivePreview from './components/LivePreview'
+import { Menu, X, Terminal, Eye } from 'lucide-react'
 import './styles/globals.css'
 
 function App() {
@@ -12,14 +13,15 @@ function App() {
   const codeRunner = useCodeRunner()
   const { agent, setAgent } = useDualAgent()
   
-  // NEW: State for panel toggles
+  // Panel toggles
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [terminalOpen, setTerminalOpen] = useState(true)
   const [rightPanelOpen, setRightPanelOpen] = useState(true)
+  const [previewPanelOpen, setPreviewPanelOpen] = useState(false) // NEW: Preview panel toggle
 
   return (
     <div className="app-container">
-      {/* NEW: Menu Bar */}
+      {/* Menu Bar */}
       <div className="menu-bar">
         <div className="menu-left">
           <button 
@@ -30,10 +32,17 @@ function App() {
             <Menu size={16} />
           </button>
           <span className="app-title">iCoder Plus v2.2</span>
-          <span className="app-subtitle">AI IDE with Monaco Editor</span>
+          <span className="app-subtitle">AI IDE with Live Preview</span>
         </div>
         
         <div className="menu-right">
+          <button 
+            className="menu-btn"
+            onClick={() => setPreviewPanelOpen(!previewPanelOpen)}
+            title="Toggle Live Preview"
+          >
+            <Eye size={16} />
+          </button>
           <button 
             className="menu-btn"
             onClick={() => setTerminalOpen(!terminalOpen)}
@@ -52,7 +61,7 @@ function App() {
       </div>
       
       <div className="app-content">
-        {/* Left Panel - File Tree (EXISTING + collapsed state) */}
+        {/* Left Panel - File Tree */}
         <div className={`left-panel ${sidebarCollapsed ? 'collapsed' : ''}`}>
           <FileTree
             fileTree={fileManager.fileTree}
@@ -68,7 +77,7 @@ function App() {
           />
         </div>
 
-        {/* Main Panel - Editor (EXISTING) */}
+        {/* Main Panel - Editor */}
         <div className="main-panel">
           <Editor
             openTabs={fileManager.openTabs}
@@ -77,10 +86,28 @@ function App() {
             closeTab={fileManager.closeTab}
             updateFileContent={fileManager.updateFileContent}
             onRunCode={codeRunner.runCode}
+            previewMode={codeRunner.previewMode}
+            onTogglePreview={codeRunner.togglePreview}
           />
         </div>
 
-        {/* NEW: Right Panel - AI Assistant */}
+        {/* NEW: Live Preview Panel (conditionally rendered) */}
+        {previewPanelOpen && (
+          <div className="preview-panel">
+            <LivePreview
+              activeTab={fileManager.activeTab}
+              isRunning={codeRunner.isRunning}
+              previewMode={codeRunner.previewMode}
+              consoleLog={codeRunner.consoleLog}
+              previewFrameRef={codeRunner.previewFrameRef}
+              onRunCode={codeRunner.runCode}
+              onTogglePreview={codeRunner.togglePreview}
+              onClearConsole={codeRunner.clearConsole}
+            />
+          </div>
+        )}
+
+        {/* Right Panel - AI Assistant */}
         {rightPanelOpen && (
           <div className="right-panel">
             <div className="right-panel-header">
@@ -124,7 +151,7 @@ function App() {
         )}
       </div>
 
-      {/* NEW: Bottom Terminal (with toggle) */}
+      {/* Bottom Terminal */}
       {terminalOpen && (
         <div className="terminal-panel">
           <div className="terminal-header">

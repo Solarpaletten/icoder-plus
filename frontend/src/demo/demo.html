@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Preview Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .demo-button {
+            background: #4ecdc4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        .demo-button:hover {
+            background: #45b7aa;
+            transform: translateY(-2px);
+        }
+        .output {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-family: monospace;
+            min-height: 50px;
+        }
+        .counter {
+            font-size: 24px;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 iCoder Plus Live Preview</h1>
+        <p>This HTML file demonstrates the live preview functionality!</p>
+        
+        <div class="counter">
+            Counter: <span id="count">0</span>
+        </div>
+        
+        <div style="text-align: center;">
+            <button class="demo-button" onclick="increment()">➕ Increment</button>
+            <button class="demo-button" onclick="decrement()">➖ Decrement</button>
+            <button class="demo-button" onclick="reset()">🔄 Reset</button>
+            <button class="demo-button" onclick="logMessage()">📝 Log Message</button>
+        </div>
+        
+        <div class="output" id="output">
+            Click buttons to see interactions...
+        </div>
+    </div>
+
+    <script>
+        let counter = 0;
+        const countEl = document.getElementById('count');
+        const outputEl = document.getElementById('output');
+        
+        function updateDisplay() {
+            countEl.textContent = counter;
+        }
+        
+        function increment() {
+            counter++;
+            updateDisplay();
+            outputEl.textContent = `✅ Counter incremented to ${counter}`;
+            console.log(`Counter incremented to ${counter}`);
+        }
+        
+        function decrement() {
+            counter--;
+            updateDisplay();
+            outputEl.textContent = `⬇️ Counter decremented to ${counter}`;
+            console.log(`Counter decremented to ${counter}`);
+        }
+        
+        function reset() {
+            counter = 0;
+            updateDisplay();
+            outputEl.textContent = `🔄 Counter reset to ${counter}`;
+            console.log(`Counter reset to ${counter}`);
+        }
+        
+        function logMessage() {
+            const message = `Hello from iCoder Plus! Current time: ${new Date().toLocaleTimeString()}`;
+            outputEl.textContent = message;
+            console.log(message);
+        }
+        
+        // Initialize
+        updateDisplay();
+        console.log('🚀 Live Preview Demo loaded successfully!');
+    </script>
+</body>
+</html>

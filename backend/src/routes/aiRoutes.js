@@ -1,153 +1,278 @@
-// src/routes/aiRoutes.js
-import express from 'express'
-import { OpenAI } from 'openai'
-import winston from 'winston'
+const express = require('express');
+const router = express.Router();
 
-const router = express.Router()
-
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.simple(),
-  transports: [new winston.transports.Console()]
-})
-
-// Initialize OpenAI (if API key provided)
-// ❌ [TS-annotation было]: let openai: OpenAI | null = null
-// ✅ [JS-версия]:
-let openai = null
-
-if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your_openai_key_here') {
-  openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-  })
-}
-
-// AI Chat endpoint
+// ============================================================================
+// AI CHAT ENDPOINT
+// ============================================================================
 router.post('/chat', async (req, res) => {
   try {
-    const { agent, message, code, fileName } = req.body
+    const { agent, message, code, fileName } = req.body;
 
-    if (!message) {
-      return res.status(400).json({ error: 'Message is required' })
+    if (!agent || !message) {
+      return res.status(400).json({
+        success: false,
+        error: 'Agent and message are required'
+      });
     }
 
-    // If OpenAI is configured, use real AI
-    if (openai) {
-      const systemPrompt = agent === 'dashka'
-        ? 'You are Dashka, an expert software architect. Analyze code architecture, suggest improvements, and provide structural advice.'
-        : 'You are Claudy, a code generator assistant. Generate components, write code, and help with development tasks.'
+    console.log(`AI Chat: ${agent} - "${message}"`);
 
-      const userPrompt = code
-        ? `File: ${fileName}\n\nCode:\n${code}\n\nQuestion: ${message}`
-        : message
+    // Mock ответы (Step 7.2 подключит реальные AI API)
+    const mockResponses = {
+      dashka: [
+        "Как архитектор, рекомендую структурировать код модульно. [MOCK MODE]",
+        "Анализирую архитектуру проекта. Нужны ли рефакторинг или оптимизация? [MOCK]",
+        "Используйте паттерн MVC для организации кода. [MOCK]",
+        "Dashka здесь! Помогу с архитектурными решениями. [MOCK]",
+        "Код неплох, но можно улучшить читаемость. [MOCK]"
+      ],
+      claudy: [
+        "Claudy готов! Могу сгенерировать компонент или исправить код. [MOCK MODE]",
+        "Какой компонент нужно создать? React, Vue или JS? [MOCK]",
+        "Проанализирую код в следующем обновлении. [MOCK]",
+        "Генерирую код по описанию. [MOCK]",
+        "Помогу с оптимизацией или отладкой. [MOCK]"
+      ]
+    };
 
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        max_tokens: 500,
-        temperature: 0.7
-      })
+    const responses = mockResponses[agent] || mockResponses.claudy;
+    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
 
-      const aiResponse = completion.choices[0]?.message?.content || 'Извините, не могу обработать запрос.'
-
-      return res.json({
+    setTimeout(() => {
+      res.json({
         success: true,
-        data: { message: aiResponse }
-      })
+        agent,
+        message: randomResponse,
+        timestamp: new Date().toISOString(),
+        mock: true,
+        note: 'Step 7.2 will connect real AI services',
+        context: {
+          fileName: fileName || 'unknown',
+          hasCode: !!code,
+          messageLength: message.length
+        }
+      });
+    }, 800 + Math.random() * 1200);
+  } catch (error) {
+    console.error('AI Chat Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'AI chat failed',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// ============================================================================
+// AI ANALYZE ENDPOINT
+// ============================================================================
+router.post('/analyze', async (req, res) => {
+  try {
+    const { code, fileName, analysisType } = req.body;
+
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        error: 'Code is required for analysis'
+      });
     }
 
-    // Fallback responses when no API key
-    // ❌ [TS-annotation было]: fallbackResponses[agent as keyof typeof fallbackResponses]
-    // ✅ [JS-версия]: fallbackResponses[agent]
-    const fallbackResponses = {
-      dashka: generateDashkaResponse(message, code),
-      claudy: generateClaudyResponse(message, code, fileName)
+    console.log(`AI Analyze: ${fileName || 'untitled'} - ${analysisType || 'general'}`);
+
+    const mockAnalysis = {
+      general: [
+        "Код хорошо структурирован, но можно улучшить читаемость [MOCK]",
+        "Рекомендую добавить error handling [MOCK]",
+        "Переменные названы понятно [MOCK]",
+        "Стоит вынести magic numbers в константы [MOCK]"
+      ],
+      review: [
+        "Code review: логика корректная [MOCK]",
+        "Добавьте комментарии к сложным участкам [MOCK]",
+        "Производительность: без критических проблем [MOCK]",
+        "Безопасность: input validation можно улучшить [MOCK]"
+      ],
+      optimize: [
+        "Оптимизация: используйте кэширование [MOCK]",
+        "Память используется эффективно [MOCK]",
+        "Алгоритм оптимален для задачи [MOCK]",
+        "Рассмотрите async/await вместо callbacks [MOCK]"
+      ]
+    };
+
+    const analysis = mockAnalysis[analysisType] || mockAnalysis.general;
+    const randomAnalysis = analysis[Math.floor(Math.random() * analysis.length)];
+
+    res.json({
+      success: true,
+      data: {
+        fileName: fileName || 'untitled',
+        analysisType: analysisType || 'general',
+        analysis: randomAnalysis,
+        codeLength: code.length,
+        linesOfCode: code.split('\n').length,
+        timestamp: new Date().toISOString(),
+        mock: true,
+        note: 'Step 7.2 will connect real AI analysis'
+      }
+    });
+  } catch (error) {
+    console.error('AI Analyze Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Code analysis failed',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// ============================================================================
+// AI FIX/APPLY ENDPOINT
+// ============================================================================
+router.post('/fix/apply', async (req, res) => {
+  try {
+    const { code, fileName, fixType } = req.body;
+
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        error: 'Code is required for fixing'
+      });
+    }
+
+    console.log(`AI Fix: ${fileName || 'untitled'} - ${fixType || 'general'}`);
+
+    let fixedCode = code;
+    const fixes = [];
+
+    if (code.includes('var ')) {
+      fixedCode = fixedCode.replace(/var /g, 'let ');
+      fixes.push('Replaced var with let');
+    }
+
+    if (code.includes('console.log')) {
+      const logCount = (code.match(/console\.log/g) || []).length;
+      fixedCode = fixedCode.replace(/console\.log.*?\n?/g, '');
+      fixes.push(`Removed ${logCount} console.log statements`);
+    }
+
+    if (fixes.length === 0) {
+      fixes.push('Code looks good - no critical issues found [MOCK]');
     }
 
     res.json({
       success: true,
-      data: { message: fallbackResponses[agent] || '⚠️ Unsupported agent' }
-    })
-
+      data: {
+        originalCode: code,
+        fixedCode,
+        fileName: fileName || 'untitled',
+        fixType: fixType || 'general',
+        appliedFixes: fixes,
+        changeCount: fixes.length,
+        timestamp: new Date().toISOString(),
+        mock: true,
+        note: 'Step 7.2 will connect real AI fixing'
+      }
+    });
   } catch (error) {
-    logger.error('AI Chat error:', error)
+    console.error('AI Fix Error:', error);
     res.status(500).json({
       success: false,
-      error: 'AI service temporarily unavailable'
-    })
+      error: 'Code fixing failed',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
-})
+});
 
-// Code analysis endpoint
-router.post('/analyze', async (req, res) => {
-  try {
-    const { code } = req.body
+// ============================================================================
+// AI STATUS ENDPOINT
+// ============================================================================
+router.get('/status', (req, res) => {
+  res.json({
+    status: 'mock',
+    version: '7.1.0',
+    services: {
+      dashka: {
+        status: 'mock',
+        provider: 'OpenAI GPT-4 (not connected)',
+        note: 'Step 7.2 will connect real AI',
+        capabilities: ['chat', 'code-review', 'architecture-advice']
+      },
+      claudy: {
+        status: 'mock',
+        provider: 'Anthropic Claude (not connected)',
+        note: 'Step 7.2 will connect real AI',
+        capabilities: ['code-generation', 'bug-fixing', 'optimization']
+      }
+    },
+    endpoints: [
+      'POST /api/ai/chat',
+      'POST /api/ai/analyze',
+      'POST /api/ai/fix/apply',
+      'GET /api/ai/status',
+      'GET /api/ai/capabilities'
+    ],
+    mock: true,
+    timestamp: new Date().toISOString()
+  });
+});
 
-    if (!code) {
-      return res.status(400).json({ error: 'Code is required' })
-    }
+// ============================================================================
+// AI CAPABILITIES ENDPOINT
+// ============================================================================
+router.get('/capabilities', (req, res) => {
+  res.json({
+    success: true,
+    capabilities: {
+      dashka: {
+        name: 'Dashka (Architect)',
+        specialty: 'Code Architecture & Review',
+        skills: [
+          'Code structure analysis',
+          'Architecture recommendations',
+          'Performance review',
+          'Best practices guidance',
+          'Design patterns advice'
+        ],
+        status: 'mock'
+      },
+      claudy: {
+        name: 'Claudy (Generator)',
+        specialty: 'Code Generation & Fixing',
+        skills: [
+          'Component generation',
+          'Bug fixing',
+          'Code optimization',
+          'Refactoring assistance',
+          'Documentation generation'
+        ],
+        status: 'mock'
+      }
+    },
+    version: '7.1.0',
+    mock: true,
+    note: 'Step 7.2 will enable real AI capabilities'
+  });
+});
 
-    // Basic code analysis
-    const analysis = {
-      lineCount: code.split('\n').length,
-      characterCount: code.length,
-      suggestions: [
-        'Consider adding error handling',
-        'Add TypeScript types for better maintainability',
-        'Consider breaking down large functions'
-      ],
-      issues: [],
-      score: 85
-    }
+// ============================================================================
+// ERROR HANDLING
+// ============================================================================
+router.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'AI endpoint not found',
+    path: req.originalUrl,
+    availableEndpoints: [
+      'POST /api/ai/chat',
+      'POST /api/ai/analyze',
+      'POST /api/ai/fix/apply',
+      'GET /api/ai/status',
+      'GET /api/ai/capabilities'
+    ]
+  });
+});
 
-    res.json({ success: true, data: analysis })
-
-  } catch (error) {
-    logger.error('Code analysis error:', error)
-    res.status(500).json({
-      success: false,
-      error: 'Analysis service temporarily unavailable'
-    })
-  }
-})
-
-// Generate Dashka response
-// ❌ [TS-annotation было]: function generateDashkaResponse(message: string, code?: string): string
-// ✅ [JS-версия]:
-function generateDashkaResponse(message, code) {
-  const responses = [
-    "🏗️ Архитектурный анализ: используйте SOLID.",
-    "🔍 Анализ структуры: добавьте паттерны проектирования.",
-    "⚡ Оптимизация: используйте мемоизацию и ленивую загрузку.",
-    "🛠️ Улучшение архитектуры: разделите компоненты по SRP."
-  ]
-
-  if (message.includes('архитектур') || message.includes('структур')) {
-    return responses[0]
-  } else if (message.includes('производительность') || message.includes('оптимиз')) {
-    return responses[2]
-  } else {
-    return responses[Math.floor(Math.random() * responses.length)]
-  }
-}
-
-// Generate Claudy response
-// ❌ [TS-annotation было]: function generateClaudyResponse(message: string, code?: string, fileName?: string): string
-// ✅ [JS-версия]:
-function generateClaudyResponse(message, code, fileName) {
-  if (message.includes('компонент')) {
-    const comp = fileName?.replace('.js', '') || 'NewComponent'
-    return `🤖 Generated component:\n\nimport React from 'react'\n\nconst ${comp} = () => (\n  <div className="component">\n    <h2>Hello from ${comp}!</h2>\n  </div>\n)\n\nexport default ${comp}`
-  }
-
-  if (message.includes('стили') || message.includes('css')) {
-    return `🎨 Generated CSS:\n\n.component {\n  display: flex;\n  flex-direction: column;\n  padding: 1rem;\n  border-radius: 8px;\n  background: #f8f9fa;\n  box-shadow: 0 2px 4px rgba(0,0,0,0.1);\n}\n\n.component h2 {\n  color: #2c3e50;\n  margin-bottom: 0.5rem;\n}`
-  }
-
-  return `🤖 Код для: "${message}"\n\nconsole.log('Hello from Claudy!')`
-}
-
-export { router as aiRouter }
+module.exports = router;

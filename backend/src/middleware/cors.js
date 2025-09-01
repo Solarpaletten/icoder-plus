@@ -3,7 +3,7 @@ import cors from "cors";
 
 const allow = [
   "http://localhost:5173",
-  "https://icoderfrontend.vercel.app", // твой фронтовый домен
+  "https://icoder-solar.onrender.com",
 ];
 
 export default cors({

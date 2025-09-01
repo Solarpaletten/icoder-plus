@@ -14,7 +14,7 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:5173', 'https://icoder-plus.vercel.app'],
+    origin: ['http://localhost:5173', 'https://icoder-solar.onrender.com'],
     methods: ['GET', 'POST']
   }
 });
@@ -63,7 +63,7 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://icoder-plus.vercel.app'],
+  origin: ['http://localhost:5173', 'https://icoder-solar.onrender.com'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']

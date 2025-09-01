@@ -1,204 +1,138 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const compression = require('compression');
-require('dotenv').config();
+import express from 'express'
+import { createServer } from 'http'
+import { Server } from 'socket.io'
+import cors from 'cors'
+import helmet from 'helmet'
+import dotenv from 'dotenv'
+import pty from 'node-pty'
+import winston from 'winston'
+import { aiRouter } from './routes/ai.js'
+import { terminalRouter } from './routes/terminal.js'
 
-const app = express();
-const PORT = parseInt(process.env.PORT || '10000', 10);
+dotenv.config()
 
-// Security middleware
-app.use(helmet({
-  crossOriginEmbedderPolicy: false,
-  contentSecurityPolicy: false
-}));
+const app = express()
+const server = createServer(app)
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || "*",
+    methods: ["GET", "POST"]
+  }
+})
 
-// CORS configuration
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? true : ['http://localhost:5173','http://localhost:5174','http://127.0.0.1:5173','https://icoder-solar.onrender.com'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: false
-}));
+// Logger setup
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.Console({
+      format: winston.format.simple()
+    })
+  ]
+})
 
-app.use(compression());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Middleware
+app.use(helmet())
+app.use(cors())
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
-// Request logging
-if (process.env.NODE_ENV !== 'production') {
-  app.use((req: any, res: any, next: any) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-    next();
-  });
-}
-
-// Health check endpoint
-app.get('/health', (req: any, res: any) => {
-  res.status(200).json({
+// Health check
+app.get('/health', (req, res) => {
+  res.json({
     status: 'OK',
-    message: 'iCoder Plus Backend is healthy',
+    version: '2.0.0',
     timestamp: new Date().toISOString(),
-    version: '2.1.1',
-    port: PORT,
-    environment: process.env.NODE_ENV || 'production',
-    uptime: process.uptime()
-  });
-});
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
+  })
+})
 
-// Root endpoint
-app.get('/', (req: any, res: any) => {
-  res.status(200).json({
-    message: 'iCoder Plus Backend API v2.1.1',
-    status: 'running',
-    environment: process.env.NODE_ENV || 'production',
-    endpoints: {
-      health: 'GET /health',
-      chat: 'POST /api/ai/chat',
-      analyze: 'POST /api/ai/analyze'
-    },
-    documentation: 'https://github.com/Solarpaletten/icoder-plus'
-  });
-});
+// API Routes
+app.use('/api/ai', aiRouter)
+app.use('/api/terminal', terminalRouter)
 
-// AI Chat endpoint - Dual Agent Support
-app.post('/api/ai/chat', (req: any, res: any) => {
-  const { message, agent, code, targetFile } = req.body;
-  
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('AI Chat request:', { 
-      agent: agent || 'claudy', 
-      messageLength: message?.length || 0,
-      targetFile: targetFile || 'none'
-    });
-  }
-  
-  // Validate input
-  if (!message || typeof message !== 'string') {
-    return res.status(400).json({
-      success: false,
-      error: 'Message is required and must be a string'
-    });
-  }
-  
-  // Simulate AI response based on agent
-  let response = '';
-  let codeBlocks: any[] = [];
-  
-  if (agent === 'dashka') {
-    response = `Dashka (Архитект): Анализирую архитектуру проекта.\n\n${message}\n\nРекомендации:\n- Проверить модульность компонентов\n- Оптимизировать структуру файлов\n- Убедиться в правильности типизации`;
-  } else {
-    // Claudy mode - generate code
-    const fileName = targetFile || 'generated.js';
-    const codeExample = `// Generated code for: ${message}\nconst solution = () => {\n  // Implementation here\n  console.log('Generated solution');\n  return { success: true };\n};\n\nmodule.exports = solution;`;
-    
-    response = `Claudy: Создаю код для вашего запроса.\n\n${message}\n\nfile: ${fileName}\n\`\`\`javascript\n${codeExample}\n\`\`\``;
-    
-    codeBlocks = [{
-      id: Math.random().toString(36).substr(2, 9),
-      title: `Generated code for ${fileName}`,
-      file: fileName,
-      kind: 'javascript',
-      code: codeExample
-    }];
-  }
-  
-  res.status(200).json({
-    success: true,
-    data: {
-      message: response,
-      agent: agent || 'claudy',
-      codeBlocks: codeBlocks,
-      timestamp: new Date().toISOString()
+// Terminal WebSocket handling
+const terminals: Map<string, any> = new Map()
+
+io.on('connection', (socket) => {
+  logger.info(`Client connected: ${socket.id}`)
+
+  socket.on('terminal-command', ({ command, cwd }) => {
+    try {
+      // Create new terminal session if doesn't exist
+      if (!terminals.has(socket.id)) {
+        const term = pty.spawn(process.platform === 'win32' ? 'cmd.exe' : 'bash', [], {
+          name: 'xterm-color',
+          cols: 80,
+          rows: 24,
+          cwd: cwd || process.cwd(),
+          env: process.env
+        })
+
+        // Handle terminal output
+        term.on('data', (data: string) => {
+          socket.emit('terminal-output', data)
+        })
+
+        // Handle terminal exit
+        term.on('exit', (code: number) => {
+          terminals.delete(socket.id)
+          socket.emit('terminal-output', `\r\n\x1b[31mProcess exited with code ${code}\x1b[0m\r\n`)
+          socket.emit('terminal-output', '$ ')
+        })
+
+        terminals.set(socket.id, term)
+      }
+
+      const terminal = terminals.get(socket.id)
+      if (terminal) {
+        // Execute built-in commands
+        switch (command.toLowerCase()) {
+          case 'clear':
+            socket.emit('terminal-output', '\x1b[2J\x1b[3J\x1b[H')
+            socket.emit('terminal-output', '$ ')
+            break
+          
+          case 'help':
+            socket.emit('terminal-output', '\r\n\x1b[32mAvailable commands:\x1b[0m\r\n')
+            socket.emit('terminal-output', '  ls      - List files\r\n')
+            socket.emit('terminal-output', '  cat     - Display file content\r\n')
+            socket.emit('terminal-output', '  pwd     - Current directory\r\n')
+            socket.emit('terminal-output', '  clear   - Clear terminal\r\n')
+            socket.emit('terminal-output', '  npm     - Node package manager\r\n')
+            socket.emit('terminal-output', '  git     - Git commands\r\n')
+            socket.emit('terminal-output', '\r\n$ ')
+            break
+          
+          default:
+            // Execute command in terminal
+            terminal.write(command + '\r')
+        }
+      }
+    } catch (error) {
+      logger.error('Terminal command error:', error)
+      socket.emit('terminal-error', error.message)
     }
-  });
-});
+  })
 
-// AI Analyze endpoint  
-app.post('/api/ai/analyze', (req: any, res: any) => {
-  const { code, fileName } = req.body;
-  
-  if (!code || typeof code !== 'string') {
-    return res.status(400).json({
-      success: false,
-      error: 'Code is required and must be a string'
-    });
-  }
-  
-  // Basic code analysis simulation
-  const analysis = {
-    issues: [],
-    suggestions: [
-      "Code structure appears well-organized", 
-      "Consider adding error handling",
-      "Add documentation for better maintainability"
-    ],
-    complexity: code.length > 1000 ? "high" : code.length > 500 ? "medium" : "low",
-    performance: "acceptable",
-    maintainability: "good",
-    security: "review recommended"
-  };
-  
-  res.status(200).json({
-    success: true,
-    data: {
-      analysis,
-      fileName: fileName || 'unknown',
-      timestamp: new Date().toISOString()
+  socket.on('disconnect', () => {
+    logger.info(`Client disconnected: ${socket.id}`)
+    // Clean up terminal session
+    if (terminals.has(socket.id)) {
+      const terminal = terminals.get(socket.id)
+      terminal.kill()
+      terminals.delete(socket.id)
     }
-  });
-});
+  })
+})
 
-// 404 handler
-app.use('*', (req: any, res: any) => {
-  res.status(404).json({
-    error: 'Route not found',
-    message: `${req.method} ${req.originalUrl} does not exist`,
-    availableEndpoints: [
-      'GET /', 
-      'GET /health', 
-      'POST /api/ai/chat', 
-      'POST /api/ai/analyze'
-    ]
-  });
-});
+const PORT = process.env.PORT || 3000
 
-// Global error handler
-app.use((err: any, req: any, res: any, next: any) => {
-  console.error('Server error:', err.message);
-  res.status(500).json({
-    success: false,
-    error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
-  });
-});
-
-// Start server
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log('🚀 iCoder Plus Backend v2.1.1 started');
-  console.log(`📡 Server: http://localhost:${PORT}`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'production'}`);
-  console.log(`💚 Health: http://localhost:${PORT}/health`);
-});
-
-// Graceful shutdown
-const shutdown = (signal: string) => {
-  console.log(`🛑 ${signal} received, shutting down...`);
-  server.close(() => {
-    console.log('✅ Server closed');
-    process.exit(0);
-  });
-};
-
-process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGINT', () => shutdown('SIGINT'));
-
-process.on('uncaughtException', (err: any) => {
-  console.error('Uncaught Exception:', err);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason: any) => {
-  console.error('Unhandled Rejection:', reason);
-  process.exit(1);
-});
+server.listen(PORT, () => {
+  logger.info(`🚀 iCoder Plus Backend v2.0.0 running on port ${PORT}`)
+  logger.info(`🌐 Health check: http://localhost:${PORT}/health`)
+})

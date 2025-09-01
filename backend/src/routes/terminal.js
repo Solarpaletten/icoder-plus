@@ -10,4 +10,5 @@ router.get('/status', (req, res) => {
   })
 })
 
-export { router as terminalRouter }
+// ✅ Чистый JS-экспорт
+export default router

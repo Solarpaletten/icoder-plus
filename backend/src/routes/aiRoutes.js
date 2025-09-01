@@ -1,4 +1,4 @@
-//src/routes/aiRoutes.ts
+//src/routes/aiRoutes.js
 import express from 'express'
 import { OpenAI } from 'openai'
 import winston from 'winston'
@@ -140,4 +140,3 @@ function generateClaudyResponse(message: string, code?: string, fileName?: strin
   return `🤖 **Код для: "${message}"**\n\n\`\`\`javascript\n// Сгенерированный код\nconsole.log('Hello from Claudy!')\n\n// TODO: Implement ${message}\n\`\`\``
 }
 
-export { router as aiRouter }

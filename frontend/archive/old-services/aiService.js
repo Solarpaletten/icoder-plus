@@ -1,5 +1,9 @@
-const API_BASE = process.env.VITE_API_URL || 'http://localhost:3000'
+// Используем import.meta.env, а не process.env
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3008'
 
+// ==============================
+// AI CHAT ENDPOINT
+// ==============================
 export const askAI = async ({ agent, message, code, fileName, context }) => {
   try {
     const response = await fetch(`${API_BASE}/api/ai/chat`, {
@@ -24,17 +28,31 @@ export const askAI = async ({ agent, message, code, fileName, context }) => {
     return data.data || data
   } catch (error) {
     console.error('AI Service Error:', error)
-    
-    // Fallback ответы если API недоступен
+
+    // Fallback ответы, если API недоступен
     const fallbackResponses = {
-      dashka: `🏗️ **Архитектурный анализ** (Fallback mode)\n\n${message.includes('архитектур') ? 'Рекомендую использовать модульную архитектуру с четким разделением ответственности.' : 'Код выглядит хорошо структурированным.'}`,
-      claudy: `🤖 **Генерация кода** (Fallback mode)\n\n\`\`\`javascript\n// Сгенерированный код для: ${message}\nconst component = () => {\n  return <div>Hello from Claudy!</div>\n}\n\nexport default component\n\`\`\``
+      dashka: `🏗️ **Архитектурный анализ** (Fallback mode)\n\n${
+        message.includes('архитектур')
+          ? 'Рекомендую использовать модульную архитектуру с четким разделением ответственности.'
+          : 'Код выглядит хорошо структурированным.'
+      }`,
+      claudy: `🤖 **Генерация кода** (Fallback mode)\n\n\`\`\`javascript
+// Сгенерированный код для: ${message}
+const component = () => {
+  return <div>Hello from Claudy!</div>
+}
+
+export default component
+\`\`\``
     }
-    
+
     return { message: fallbackResponses[agent] || 'AI недоступен в данный момент.' }
   }
 }
 
+// ==============================
+// AI ANALYZE ENDPOINT
+// ==============================
 export const analyzeCode = async (code, fileName) => {
   try {
     const response = await fetch(`${API_BASE}/api/ai/analyze`, {
@@ -61,6 +79,9 @@ export const analyzeCode = async (code, fileName) => {
   }
 }
 
+// ==============================
+// AI GENERATE ENDPOINT
+// ==============================
 export const generateCode = async (prompt, context) => {
   try {
     const response = await fetch(`${API_BASE}/api/ai/generate`, {

@@ -62,7 +62,7 @@ const RealTerminal = ({ isOpen, onClose }) => {
       fitAddonRef.current = fitAddon
 
       // WebSocket соединение с backend
-      const BACKEND_URL = process.env.VITE_API_URL || 'http://localhost:3000'
+      const BACKEND_URL = process.env.VITE_API_URL || 'http://localhost:3008'
       const socket = io(BACKEND_URL)
       socketRef.current = socket
 

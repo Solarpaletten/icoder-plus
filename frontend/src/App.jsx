@@ -1,243 +1,294 @@
-import React, { useState } from 'react'
-import { useFileManager } from './hooks/useFileManager'
-import { useCodeRunner } from './hooks/useCodeRunner'
-import { useDualAgent } from './hooks/useDualAgent'
-import { useFileSystem } from './hooks/useFileSystem'
-import TopMenu from './components/TopMenu'
+import React, { useState, useEffect } from 'react'
+import { 
+  PanelLeft, 
+  MessageSquare,
+  X,
+  Menu,
+  FileText,
+  Settings,
+  Terminal as TerminalIcon,
+  Upload,
+  Play,
+  Download
+} from 'lucide-react'
 import FileTree from './components/FileTree'
 import Editor from './components/Editor'
 import LivePreview from './components/LivePreview'
-import Terminal from './components/Terminal'
-import { Menu, X, Eye } from 'lucide-react'
+import RealTerminal from './components/RealTerminal'
+import AIAssistants from './components/AIAssistants'
+import FileUpload from './components/FileUpload'
+import TopMenu from './components/TopMenu'
+import { useFileManager } from './hooks/useFileManager'
+import { useCodeRunner } from './hooks/useCodeRunner'
 import './styles/globals.css'
 
 function App() {
-  const fileManager = useFileManager()
-  const codeRunner = useCodeRunner()
-  const { agent, setAgent } = useDualAgent()
-  const fileSystem = useFileSystem()
-  
-  // Panel toggles
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [leftPanelOpen, setLeftPanelOpen] = useState(true)
+  const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [terminalOpen, setTerminalOpen] = useState(false)
-  const [rightPanelOpen, setRightPanelOpen] = useState(true)
-  const [previewPanelOpen, setPreviewPanelOpen] = useState(false)
+  const [uploadModalOpen, setUploadModalOpen] = useState(false)
+  
+  const { 
+    fileTree, 
+    openTabs, 
+    activeTab, 
+    createFile, 
+    createFolder, 
+    deleteItem, 
+    renameItem, 
+    setActiveTab, 
+    openFile, 
+    closeTab, 
+    updateFileContent,
+    loadProject,
+    exportProject
+  } = useFileManager()
+  
+  const { runCode, output, isRunning } = useCodeRunner()
 
-  // File operations from TopMenu
-  const handleOpenFile = (file) => {
-    fileManager.openFile(file)
-  }
-
-  const handleOpenFolder = (folderStructure) => {
-    fileManager.setFileTree(folderStructure)
-    // Open first file if available
-    const firstFile = findFirstFile(folderStructure)
-    if (firstFile) {
-      fileManager.openFile(firstFile)
-    }
-  }
-
-  const findFirstFile = (items) => {
-    for (const item of items) {
-      if (item.type === 'file') return item
-      if (item.children) {
-        const found = findFirstFile(item.children)
-        if (found) return found
-      }
-    }
-    return null
-  }
-
-  const handleSaveProject = (format = 'localStorage') => {
-    if (format === 'zip') {
-      fileSystem.saveProjectAsZip(fileManager.fileTree)
-    } else {
-      // Save to localStorage (already handled by useFileManager)
-      localStorage.setItem('icoder-project-v2.2', JSON.stringify(fileManager.fileTree))
-      console.log('Project saved to localStorage')
-    }
-  }
-
-  const handleNewProject = (type) => {
-    if (type === 'file') {
-      fileManager.createFile(null, 'untitled.js', '// New file\nconsole.log("Hello World!");')
-    } else if (type === 'folder') {
-      fileManager.createFolder(null, 'New Folder')
-    }
-  }
-
-  const handleImportProject = async (zipFile) => {
-    const folderStructure = await fileSystem.loadProjectFromZip(zipFile)
-    if (folderStructure.length > 0) {
-      fileManager.setFileTree(folderStructure)
-      const firstFile = findFirstFile(folderStructure)
-      if (firstFile) {
-        fileManager.openFile(firstFile)
-      }
-    }
-  }
-
-  const handleTerminalOpenFile = (file) => {
-    fileManager.openFile(file)
-  }
-
-  const handleTerminalBuild = () => {
-    console.log('Building project via terminal...')
-    // Trigger actual build if needed
-    codeRunner.runCode({
-      name: 'build-script.js',
-      content: 'console.log("Project built successfully!")'
+  const handleFilesLoaded = (files) => {
+    files.forEach(file => {
+      createFile(file.name, file.content)
+      openFile(file.name)
     })
   }
 
+  const handleProjectLoaded = (projectStructure) => {
+    loadProject(projectStructure)
+  }
+
+  const handleRunCode = () => {
+    if (activeTab) {
+      const content = activeTab.content
+      runCode(content, activeTab.name)
+    }
+  }
+
+  const activeFile = activeTab
+
   return (
-    <div className="app-container">
-      {/* Top Menu Bar */}
-      <TopMenu
-        onOpenFile={handleOpenFile}
-        onOpenFolder={handleOpenFolder}
-        onSaveProject={handleSaveProject}
-        onNewProject={handleNewProject}
-        onImportProject={handleImportProject}
+    <div className="ide-container">
+      {/* Top Menu */}
+      <TopMenu 
+        onNewFile={() => createFile('untitled.js', '')}
+        onOpenFile={() => setUploadModalOpen(true)}
+        onSave={() => {/* Implement save */}}
+        onExport={() => exportProject()}
       />
 
-      {/* Main Menu Bar */}
-      <div className="menu-bar">
-        <div className="menu-left">
+      {/* Main Header */}
+      <header className="ide-header">
+        <div className="header-left">
           <button 
-            className="menu-toggle"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="panel-toggle"
+            onClick={() => setLeftPanelOpen(!leftPanelOpen)}
             title="Toggle Explorer"
           >
             <Menu size={16} />
           </button>
+          <div className="project-info">
+            <span className="project-name">iCoder Plus v2.0</span>
+            <span className="project-status">Final Production</span>
+          </div>
         </div>
         
-        <div className="menu-right">
+        <div className="header-center">
+          <div className="quick-actions">
+            <button 
+              className="quick-btn"
+              onClick={handleRunCode}
+              disabled={!activeFile || isRunning}
+              title="Run Code (Ctrl+R)"
+            >
+              <Play size={16} />
+              {isRunning ? 'Running...' : 'Run'}
+            </button>
+            
+            <button 
+              className="quick-btn"
+              onClick={() => setUploadModalOpen(true)}
+              title="Upload Files"
+            >
+              <Upload size={16} />
+              Upload
+            </button>
+          </div>
+        </div>
+        
+        <div className="header-right">
           <button 
-            className={`menu-btn ${previewPanelOpen ? 'active' : ''}`}
-            onClick={() => setPreviewPanelOpen(!previewPanelOpen)}
-            title="Toggle Live Preview"
-          >
-            <Eye size={16} />
-          </button>
-          <button 
-            className={`menu-btn ${terminalOpen ? 'active' : ''}`}
-            onClick={() => setTerminalOpen(!terminalOpen)}
-            title="Toggle Terminal"
-          >
-            ⚡
-          </button>
-          <button 
-            className="menu-btn"
+            className={`panel-toggle ${rightPanelOpen ? 'active' : ''}`}
             onClick={() => setRightPanelOpen(!rightPanelOpen)}
             title="Toggle AI Assistant"
           >
-            {rightPanelOpen ? <X size={16} /> : '🤖'}
+            <MessageSquare size={16} />
+            AI
           </button>
         </div>
-      </div>
-      
-      <div className="app-content">
-        {/* Left Panel - File Tree */}
-        <div className={`left-panel ${sidebarCollapsed ? 'collapsed' : ''}`}>
-          <FileTree
-            fileTree={fileManager.fileTree}
-            searchQuery={fileManager.searchQuery}
-            setSearchQuery={fileManager.setSearchQuery}
-            openFile={fileManager.openFile}
-            createFile={fileManager.createFile}
-            createFolder={fileManager.createFolder}
-            renameItem={fileManager.renameItem}
-            deleteItem={fileManager.deleteItem}
-            toggleFolder={fileManager.toggleFolder}
-            selectedFileId={fileManager.activeTab?.id}
-          />
-        </div>
+      </header>
 
-        {/* Main Panel - Editor */}
-        <div className="main-panel">
-          <Editor
-            openTabs={fileManager.openTabs}
-            activeTab={fileManager.activeTab}
-            setActiveTab={fileManager.setActiveTab}
-            closeTab={fileManager.closeTab}
-            updateFileContent={fileManager.updateFileContent}
-            onRunCode={codeRunner.runCode}
-            previewMode={codeRunner.previewMode}
-            onTogglePreview={codeRunner.togglePreview}
-          />
-        </div>
-
-        {/* Live Preview Panel */}
-        {previewPanelOpen && (
-          <div className="preview-panel">
-            <LivePreview
-              activeTab={fileManager.activeTab}
-              isRunning={codeRunner.isRunning}
-              previewMode={codeRunner.previewMode}
-              consoleLog={codeRunner.consoleLog}
-              previewFrameRef={codeRunner.previewFrameRef}
-              onRunCode={codeRunner.runCode}
-              onTogglePreview={codeRunner.togglePreview}
-              onClearConsole={codeRunner.clearConsole}
+      {/* Main Layout */}
+      <div className="ide-main">
+        {/* Left Panel - File Explorer */}
+        {leftPanelOpen && (
+          <aside className="left-panel">
+            <div className="panel-header">
+              <span>EXPLORER</span>
+              <button onClick={() => setLeftPanelOpen(false)}>
+                <X size={14} />
+              </button>
+            </div>
+            
+            <FileTree 
+              fileTree={fileTree}
+              onCreateFile={createFile}
+              onCreateFolder={createFolder}
+              onDeleteItem={deleteItem}
+              onRenameItem={renameItem}
+              onFileSelect={openFile}
             />
-          </div>
+          </aside>
         )}
 
-        {/* Right Panel - AI Assistant */}
-        {rightPanelOpen && (
-          <div className="right-panel">
-            <div className="right-panel-header">
-              <h3>AI ASSISTANT</h3>
-              <div className="agent-switcher">
+        {/* Center - Editor Area */}
+        <main className="editor-area">
+          {/* Editor Tabs */}
+          <div className="editor-tabs">
+            {openTabs.map(tab => (
+              <div 
+                key={tab.id}
+                className={`tab ${activeTab?.id === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <FileText size={14} />
+                <span>{tab.name}</span>
                 <button 
-                  className={agent === 'dashka' ? 'active' : ''}
-                  onClick={() => setAgent('dashka')}
+                  className="tab-close"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    closeTab(tab.id)
+                  }}
                 >
-                  🏗️ Dashka
-                </button>
-                <button 
-                  className={agent === 'claudy' ? 'active' : ''}
-                  onClick={() => setAgent('claudy')}
-                >
-                  🤖 Claudy
+                  <X size={12} />
                 </button>
               </div>
-            </div>
-            <div className="ai-content">
-              <div className="ai-chat-area">
-                <div className="chat-messages">
-                  <div className="welcome-message">
-                    <h4>👋 {agent === 'dashka' ? 'Dashka (Architect)' : 'Claudy (Generator)'} готов к работе</h4>
-                    <p>{agent === 'dashka' 
-                      ? 'Анализирую архитектуру, планирую структуру, даю советы по коду'
-                      : 'Генерирую компоненты, функции, помогаю с кодом'
-                    }</p>
+            ))}
+          </div>
+          
+          {/* Editor Content */}
+          <div className="editor-content">
+            {activeTab ? (
+              <Editor 
+                file={activeTab}
+                onChange={(content) => updateFileContent(activeTab.id, content)}
+                onRun={handleRunCode}
+              />
+            ) : (
+              <div className="editor-placeholder">
+                <div className="welcome-message">
+                  <h2>🚀 Welcome to iCoder Plus v2.0</h2>
+                  <p>AI-powered IDE with real terminal and live preview</p>
+                  <div className="quick-start">
+                    <button 
+                      className="start-btn"
+                      onClick={() => setUploadModalOpen(true)}
+                    >
+                      <Upload size={20} />
+                      Upload Project
+                    </button>
+                    <button 
+                      className="start-btn"
+                      onClick={() => createFile('demo.js', '// Hello from iCoder Plus!\nconsole.log("Ready to code!");')}
+                    >
+                      <FileText size={20} />
+                      New File
+                    </button>
                   </div>
                 </div>
-                <div className="chat-input">
-                  <textarea 
-                    placeholder={`Спросите ${agent === 'dashka' ? 'Dashka' : 'Claudy'}...`}
-                    rows="3"
-                  />
-                  <button className="send-btn">Отправить</button>
-                </div>
               </div>
-            </div>
+            )}
           </div>
-        )}
+        </main>
+
+        {/* Right Panel - Live Preview */}
+        <aside className="right-panel">
+          <div className="panel-header">
+            <span>LIVE PREVIEW</span>
+            <button onClick={() => setRightPanelOpen(false)}>
+              <X size={14} />
+            </button>
+          </div>
+          
+          <LivePreview 
+            code={activeFile?.content || ''}
+            fileName={activeFile?.name || ''}
+            output={output}
+          />
+        </aside>
       </div>
 
       {/* Bottom Terminal */}
-      <Terminal
-        isOpen={terminalOpen}
-        onToggle={() => setTerminalOpen(!terminalOpen)}
-        fileTree={fileManager.fileTree}
-        activeFile={fileManager.activeTab}
-        onOpenFile={handleTerminalOpenFile}
-        onRunBuild={handleTerminalBuild}
-      />
+      {terminalOpen && (
+        <RealTerminal 
+          isOpen={terminalOpen}
+          onClose={() => setTerminalOpen(false)}
+        />
+      )}
+
+      {/* AI Assistant */}
+      {rightPanelOpen && (
+        <AIAssistants 
+          activeFile={activeFile}
+          fileContent={activeFile?.content}
+        />
+      )}
+
+      {/* File Upload Modal */}
+      {uploadModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Upload Files or Project</h3>
+              <button onClick={() => setUploadModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <FileUpload 
+              onFilesLoaded={handleFilesLoaded}
+              onProjectLoaded={handleProjectLoaded}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Status Bar */}
+      <footer className="ide-statusbar">
+        <div className="statusbar-left">
+          <button 
+            className={`status-btn ${terminalOpen ? 'active' : ''}`}
+            onClick={() => setTerminalOpen(!terminalOpen)}
+            title="Toggle Terminal"
+          >
+            <TerminalIcon size={14} />
+            Terminal
+          </button>
+          
+          <span className="status-info">
+            {activeFile ? activeFile.name : 'No file selected'}
+          </span>
+        </div>
+        
+        <div className="statusbar-right">
+          <span className="status-info">
+            {activeFile?.name.split('.').pop()?.toUpperCase() || 'PLAIN TEXT'}
+          </span>
+          <span className="status-info">UTF-8</span>
+          <span className="status-info">
+            Lines: {activeFile?.content.split('\n').length || 0}
+          </span>
+        </div>
+      </footer>
     </div>
   )
 }

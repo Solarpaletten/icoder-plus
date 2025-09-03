@@ -1,87 +1,87 @@
-export const aiService = {
-  async sendMessage(agentPrefix, message, targetPath, code = '') {
-    // Simulate AI response - replace with real API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
+const API_BASE = process.env.VITE_API_URL || 'http://localhost:3000'
+
+export const askAI = async ({ agent, message, code, fileName, context }) => {
+  try {
+    const response = await fetch(`${API_BASE}/api/ai/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        agent,
+        message,
+        code,
+        fileName,
+        context
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data.data || data
+  } catch (error) {
+    console.error('AI Service Error:', error)
     
-    if (agentPrefix.includes('DASHKA')) {
-      return generateDashkaResponse(message, code)
-    } else {
-      return generateClaudyResponse(message, targetPath)
+    // Fallback ответы если API недоступен
+    const fallbackResponses = {
+      dashka: `🏗️ **Архитектурный анализ** (Fallback mode)\n\n${message.includes('архитектур') ? 'Рекомендую использовать модульную архитектуру с четким разделением ответственности.' : 'Код выглядит хорошо структурированным.'}`,
+      claudy: `🤖 **Генерация кода** (Fallback mode)\n\n\`\`\`javascript\n// Сгенерированный код для: ${message}\nconst component = () => {\n  return <div>Hello from Claudy!</div>\n}\n\nexport default component\n\`\`\``
+    }
+    
+    return { message: fallbackResponses[agent] || 'AI недоступен в данный момент.' }
+  }
+}
+
+export const analyzeCode = async (code, fileName) => {
+  try {
+    const response = await fetch(`${API_BASE}/api/ai/analyze`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ code, fileName }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error('Code Analysis Error:', error)
+    return {
+      suggestions: ['AI анализ недоступен'],
+      issues: [],
+      score: 85
     }
   }
 }
 
-const generateDashkaResponse = (message, code) => {
-  return `🏗️ **Architecture Analysis**
+export const generateCode = async (prompt, context) => {
+  try {
+    const response = await fetch(`${API_BASE}/api/ai/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt, context }),
+    })
 
-Analyzing: "${message}"
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
 
-**Code Structure Assessment:**
-- Consider modular component design
-- Implement proper error boundaries
-- Use custom hooks for state logic
-- Follow consistent naming patterns
-
-**Performance Recommendations:**
-- Use React.memo for optimization
-- Implement code splitting
-- Add proper loading states
-
-**Best Practices:**
-- Add TypeScript for better DX
-- Implement proper testing
-- Use proper state management
-
-Need specific implementation guidance?`
-}
-
-const generateClaudyResponse = (message, targetPath) => {
-  if (message.toLowerCase().includes('component')) {
-    return `🤖 **Component Generation**
-
-file: ${targetPath || 'components/GeneratedComponent.jsx'}
-\`\`\`jsx
-import React, { useState } from 'react'
-
-const GeneratedComponent = ({ title = "New Component" }) => {
-  const [active, setActive] = useState(false)
-
-  return (
-    <div className={\`component \${active ? 'active' : ''}\`}>
-      <h2>{title}</h2>
-      <button onClick={() => setActive(!active)}>
-        {active ? 'Deactivate' : 'Activate'}
-      </button>
-    </div>
-  )
-}
-
-export default GeneratedComponent
-\`\`\`
-
-file: ${targetPath ? targetPath.replace('.jsx', '.css') : 'components/GeneratedComponent.css'}
-\`\`\`css
-.component {
-  padding: 16px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  transition: all 0.3s;
-}
-
-.component.active {
-  border-color: #4ecdc4;
-  background: rgba(78, 205, 196, 0.1);
-}
-\`\`\``
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error('Code Generation Error:', error)
+    return {
+      code: '// Генерация кода недоступна',
+      explanation: 'AI сервис временно недоступен'
+    }
   }
-  
-  return `🤖 **Claudy Ready**
-
-I can generate:
-- React components
-- Utility functions  
-- CSS styles
-- API services
-
-What would you like me to create?`
 }

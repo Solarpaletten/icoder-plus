@@ -8,7 +8,7 @@ export default {
     extend: {
       colors: {
         primary: '#007acc',
-        secondary: '#4ec9b0', 
+        secondary: '#4ec9b0',
         background: '#1e1e1e',
         surface: '#252526',
         border: '#464647',
@@ -16,6 +16,10 @@ export default {
           750: '#2d2d30',
           850: '#1a1a1a'
         }
+      },
+      cursor: {
+        'col-resize': 'col-resize',
+        'row-resize': 'row-resize'
       }
     },
   },

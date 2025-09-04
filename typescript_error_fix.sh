@@ -1,3 +1,11 @@
+#!/bin/bash
+
+echo "🔧 ИСПРАВЛЕНИЕ TYPESCRIPT ОШИБКИ"
+echo "================================="
+echo "Fixing: Object is possibly 'undefined' в SmartCodeEditor.tsx"
+
+# Исправить проблемную строку 76 в SmartCodeEditor.tsx
+cat > frontend/src/components/SmartCodeEditor.tsx << 'EOF'
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
@@ -148,3 +156,17 @@ export function SmartCodeEditor({ content, onChange, language }: SmartCodeEditor
     </div>
   );
 }
+EOF
+
+echo "✅ SmartCodeEditor.tsx исправлен"
+
+# Проверить сборку
+echo "🧪 Тестируем исправленный код..."
+cd frontend
+npm run build
+
+if [ $? -eq 0 ]; then
+    echo "✅ Сборка успешна - TypeScript ошибки исправлены!"
+else
+    echo "❌ Все еще есть ошибки - проверьте консоль"
+fi

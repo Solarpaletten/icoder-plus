@@ -1,3 +1,45 @@
+#!/bin/bash
+
+echo "🔧 ПРЯМОЕ ИСПРАВЛЕНИЕ TYPESCRIPT ОШИБКИ"
+echo "======================================"
+
+# Исправить проблемную строку 76 напрямую
+sed -i '' '76s/.*/      } else {/' src/components/SmartCodeEditor.tsx
+
+# Добавить безопасную проверку после строки 76
+sed -i '' '77i\
+        const foldedRange = foldingRanges.find(r => r.isFolded && r.startLine + 1 === index);\
+        if (foldedRange) {\
+          visibleLines.push("    ... \/\/ collapsed block");\
+        }\
+      }\
+    });\
+\
+    return visibleLines;\
+  };\
+\
+  const getVisibleLines = () => {\
+    const visibleLines: string[] = [];\
+    const lineStates: boolean[] = new Array(lines.length).fill(true);\
+\
+    \/\/ Отмечаем скрытые строки\
+    foldingRanges.forEach(range => {\
+      if (range.isFolded) {\
+        for (let i = range.startLine + 1; i <= range.endLine; i++) {\
+          lineStates[i] = false;\
+        }\
+      }\
+    });\
+\
+    \/\/ Собираем видимые строки - ИСПРАВЛЕНА ПРОБЛЕМА\
+    lines.forEach((line, index) => {\
+      if (lineStates[index]) {\
+        visibleLines.push(line);' src/components/SmartCodeEditor.tsx
+
+echo "✅ Строка 76 исправлена"
+
+# Альтернативный способ - полная замена файла
+cat > src/components/SmartCodeEditor.tsx << 'EOF'
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
@@ -35,7 +77,7 @@ export function SmartCodeEditor({ content, onChange, language }: SmartCodeEditor
       // Обнаружение конца блока
       if (trimmed.includes('}') && braceStack.length > 0) {
         const startLine = braceStack.pop()!;
-        if (index - startLine > 1) { // Блок больше 1 строки
+        if (index - startLine > 1) {
           ranges.push({
             startLine,
             endLine: index,
@@ -69,15 +111,14 @@ export function SmartCodeEditor({ content, onChange, language }: SmartCodeEditor
       }
     });
 
-    // Собираем видимые строки - ИСПРАВЛЕНА ПРОБЛЕМНАЯ СТРОКА
+    // Собираем видимые строки - ИСПРАВЛЕННАЯ ВЕРСИЯ
     lines.forEach((line, index) => {
       if (lineStates[index]) {
         visibleLines.push(line);
       } else {
         // Безопасная проверка на undefined
         const foldedRange = foldingRanges.find(r => r.isFolded && r.startLine + 1 === index);
-        if (foldedRange && index === foldedRange.startLine + 1) {
-          // Добавляем многоточие для свернутого блока
+        if (foldedRange) {
           visibleLines.push('    ... // collapsed block');
         }
       }
@@ -148,3 +189,16 @@ export function SmartCodeEditor({ content, onChange, language }: SmartCodeEditor
     </div>
   );
 }
+EOF
+
+echo "✅ SmartCodeEditor.tsx полностью перезаписан"
+
+# Проверить сборку
+echo "🧪 Тестируем исправленный код..."
+npm run build
+
+if [ $? -eq 0 ]; then
+    echo "✅ Сборка успешна!"
+else
+    echo "❌ Все еще есть ошибки"
+fi

@@ -35,7 +35,7 @@ export function SmartCodeEditor({ content, onChange, language }: SmartCodeEditor
       // Обнаружение конца блока
       if (trimmed.includes('}') && braceStack.length > 0) {
         const startLine = braceStack.pop()!;
-        if (index - startLine > 1) { // Блок больше 1 строки
+        if (index - startLine > 1) {
           ranges.push({
             startLine,
             endLine: index,
@@ -69,15 +69,14 @@ export function SmartCodeEditor({ content, onChange, language }: SmartCodeEditor
       }
     });
 
-    // Собираем видимые строки - ИСПРАВЛЕНА ПРОБЛЕМНАЯ СТРОКА
+    // Собираем видимые строки - ИСПРАВЛЕННАЯ ВЕРСИЯ
     lines.forEach((line, index) => {
       if (lineStates[index]) {
         visibleLines.push(line);
       } else {
         // Безопасная проверка на undefined
         const foldedRange = foldingRanges.find(r => r.isFolded && r.startLine + 1 === index);
-        if (foldedRange && index === foldedRange.startLine + 1) {
-          // Добавляем многоточие для свернутого блока
+        if (foldedRange) {
           visibleLines.push('    ... // collapsed block');
         }
       }

@@ -1,90 +1,74 @@
-import { useState } from 'react';
+import React from 'react';
 import { AppHeader } from './layout/AppHeader';
-import { FileSidebar } from './layout/FileSidebar';
-import { EditorArea } from './layout/EditorArea';
-import { RightPanel } from './layout/RightPanel';
+import { LeftSidebar } from './panels/LeftSidebar';
+import { MainEditor } from './panels/MainEditor';
+import { RightPanel } from './panels/RightPanel';
 import { BottomTerminal } from './layout/BottomTerminal';
 import { StatusBar } from './layout/StatusBar';
 import { useFileManager } from '../hooks/useFileManager';
 import { usePanelState } from '../hooks/usePanelState';
 
-export function AppShell() {
+export const AppShell: React.FC = () => {
   const fileManager = useFileManager();
   const panelState = usePanelState();
-  
+
   return (
-    <div className="h-screen flex flex-col bg-gray-900 text-white">
-      {/* Header с меню */}
+    <div className="h-screen flex flex-col bg-gray-900 text-gray-100">
+      {/* Header */}
       <AppHeader />
       
-      {/* Основная область */}
-      <div className="flex-1 flex min-h-0">
-        {/* Left Sidebar - File Explorer */}
-        {!panelState.isLeftCollapsed && (
-          <div 
-            className="bg-gray-800 border-r border-gray-700 flex-shrink-0"
-            style={{ width: panelState.leftWidth }}
-          >
-            <FileSidebar 
-              {...fileManager}
-              onToggle={() => panelState.toggleLeft()}
-            />
-          </div>
+      {/* Main Content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Sidebar */}
+        {panelState.leftVisible && (
+          <LeftSidebar
+            files={fileManager.fileTree}
+            selectedFileId={fileManager.selectedFileId}
+            onFileSelect={fileManager.openFile}
+            onFileCreate={(parentId, name, type) => {
+              if (type === 'file') {
+                fileManager.createFile(parentId, name);
+              } else {
+                fileManager.createFolder(parentId, name);
+              }
+            }}
+            onFileRename={fileManager.renameFile}
+            onFileDelete={fileManager.deleteFile}
+            onSearchQuery={fileManager.setSearchQuery}
+          />
         )}
         
-        {/* Collapsed Left Button */}
-        {panelState.isLeftCollapsed && (
-          <button
-            onClick={() => panelState.toggleLeft()}
-            className="w-8 bg-gray-800 border-r border-gray-700 flex items-center justify-center hover:bg-gray-700"
-            title="Show Explorer"
-          >
-            <span className="text-gray-400 text-xs writing-mode-vertical">EXPLORER</span>
-          </button>
-        )}
-        
-        {/* Center - Editor Area */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <EditorArea {...fileManager} />
-          
-          {/* Bottom Terminal */}
-          <BottomTerminal 
-            isCollapsed={panelState.isBottomCollapsed}
-            onToggle={() => panelState.toggleBottom()}
-            height={panelState.bottomHeight}
-            onResize={(height: number) => panelState.setBottomHeight(height)}
+        {/* Main Editor Area */}
+        <div className="flex-1 flex flex-col">
+          <MainEditor
+            openTabs={fileManager.openTabs}
+            activeTab={fileManager.activeTab}
+            closeTab={fileManager.closeTab}
+            setActiveTab={fileManager.setActiveTab}
+            updateFileContent={fileManager.updateFileContent}
           />
         </div>
         
-        {/* Right Panel - AI Assistants */}
-        {!panelState.isRightCollapsed && (
-          <div 
-            className="bg-gray-800 border-l border-gray-700 flex-shrink-0"
-            style={{ width: panelState.rightWidth }}
-          >
-            <RightPanel 
-              onToggle={() => panelState.toggleRight()}
-            />
-          </div>
-        )}
-        
-        {/* Collapsed Right Button */}
-        {panelState.isRightCollapsed && (
-          <button
-            onClick={() => panelState.toggleRight()}
-            className="w-8 bg-gray-800 border-l border-gray-700 flex items-center justify-center hover:bg-gray-700"
-            title="Show AI Assistant"
-          >
-            <span className="text-gray-400 text-xs writing-mode-vertical">AI</span>
-          </button>
+        {/* Right Panel */}
+        {panelState.rightVisible && (
+          <RightPanel />
         )}
       </div>
       
-      {/* Status Bar - синяя полоса */}
+      {/* Bottom Terminal */}
+      {panelState.bottomVisible && (
+        <BottomTerminal
+          height={panelState.bottomHeight}
+          onToggle={() => panelState.setBottomVisible(!panelState.bottomVisible)}
+          onResize={(height: number) => panelState.setBottomHeight(height)}
+        />
+      )}
+      
+      {/* Status Bar */}
       <StatusBar 
         isCollapsed={panelState.isStatusCollapsed}
-        onToggle={() => panelState.toggleStatus()}
+        onToggle={panelState.toggleStatus}
       />
     </div>
   );
-}
+};

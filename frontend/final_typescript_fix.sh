@@ -1,3 +1,82 @@
+#!/bin/bash
+
+echo "🔧 ФИНАЛЬНОЕ ИСПРАВЛЕНИЕ TYPESCRIPT ОШИБОК"
+echo "=========================================="
+
+# 1. Создать недостающий initialData.ts
+cat > src/utils/initialData.ts << 'EOF'
+import type { FileItem } from '../types';
+
+export const initialFiles: FileItem[] = [
+  {
+    id: '1',
+    name: 'src',
+    type: 'folder',
+    children: [
+      {
+        id: '2',
+        name: 'App.tsx',
+        type: 'file',
+        content: `import React from 'react';
+import { AppShell } from './components/AppShell';
+
+function App() {
+  return <AppShell />;
+}
+
+export default App;`
+      },
+      {
+        id: '3',
+        name: 'main.tsx',
+        type: 'file',
+        content: `import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)`
+      },
+      {
+        id: '4',
+        name: 'components',
+        type: 'folder',
+        children: [
+          {
+            id: '5',
+            name: 'AppShell.tsx',
+            type: 'file',
+            content: '// AppShell component'
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: '6',
+    name: 'package.json',
+    type: 'file',
+    content: `{
+  "name": "icoder-plus-frontend",
+  "version": "2.0.0",
+  "type": "module"
+}`
+  },
+  {
+    id: '7',
+    name: 'README.md',
+    type: 'file',
+    content: '# iCoder Plus Frontend\n\nModern IDE built with React + TypeScript'
+  }
+];
+EOF
+
+# 2. Исправить FileTree.tsx - убрать ссылку на несуществующий searchQuery
+cat > src/components/FileTree.tsx << 'EOF'
 import React, { useState } from 'react';
 import { 
   ChevronRight, 
@@ -234,3 +313,139 @@ export const FileTree: React.FC<FileTreeProps> = (props) => {
     </div>
   );
 };
+EOF
+
+# 3. Исправить MonacoEditor.tsx - убрать showText
+cat > src/components/MonacoEditor.tsx << 'EOF'
+import React, { useEffect, useRef } from 'react';
+import * as monaco from 'monaco-editor';
+
+interface MonacoEditorProps {
+  filename: string;
+  content: string;
+  onChange: (value: string) => void;
+}
+
+export const MonacoEditor: React.FC<MonacoEditorProps> = ({ filename, content, onChange }) => {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const monacoInstance = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+
+  const getLanguageFromFilename = (filename: string): string => {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    const languageMap: { [key: string]: string } = {
+      'js': 'javascript',
+      'jsx': 'javascript',
+      'ts': 'typescript',
+      'tsx': 'typescript',
+      'py': 'python',
+      'html': 'html',
+      'css': 'css',
+      'scss': 'scss',
+      'json': 'json',
+      'md': 'markdown',
+      'xml': 'xml',
+      'yaml': 'yaml',
+      'yml': 'yaml',
+      'sql': 'sql',
+      'php': 'php',
+      'go': 'go',
+      'rs': 'rust',
+      'cpp': 'cpp',
+      'c': 'c',
+      'java': 'java',
+      'sh': 'shell'
+    };
+    return languageMap[ext || ''] || 'plaintext';
+  };
+
+  useEffect(() => {
+    if (editorRef.current && !monacoInstance.current) {
+      // Создаем редактор
+      monacoInstance.current = monaco.editor.create(editorRef.current, {
+        value: content,
+        language: getLanguageFromFilename(filename),
+        theme: 'vs-dark',
+        fontSize: 14,
+        fontFamily: 'Cascadia Code, Fira Code, Consolas, monospace',
+        lineNumbers: 'on',
+        roundedSelection: false,
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+        tabSize: 2,
+        insertSpaces: true,
+        wordWrap: 'on',
+        minimap: {
+          enabled: true,
+          side: 'right'
+        },
+        suggest: {
+          showKeywords: true,
+          showSnippets: true,
+          showFunctions: true,
+          showVariables: true
+        },
+        quickSuggestions: {
+          other: true,
+          comments: true,
+          strings: true
+        },
+        folding: true,
+        foldingStrategy: 'indentation',
+        showFoldingControls: 'always',
+        bracketPairColorization: {
+          enabled: true
+        }
+      });
+
+      // Обработчик изменений
+      monacoInstance.current.onDidChangeModelContent(() => {
+        const value = monacoInstance.current?.getValue() || '';
+        onChange(value);
+      });
+    }
+
+    return () => {
+      monacoInstance.current?.dispose();
+      monacoInstance.current = null;
+    };
+  }, []);
+
+  // Обновляем содержимое при изменении файла
+  useEffect(() => {
+    if (monacoInstance.current) {
+      const currentValue = monacoInstance.current.getValue();
+      if (currentValue !== content) {
+        monacoInstance.current.setValue(content);
+      }
+      
+      // Обновляем язык
+      const model = monacoInstance.current.getModel();
+      if (model) {
+        monaco.editor.setModelLanguage(model, getLanguageFromFilename(filename));
+      }
+    }
+  }, [content, filename]);
+
+  return (
+    <div className="w-full h-full">
+      <div ref={editorRef} className="w-full h-full" />
+    </div>
+  );
+};
+EOF
+
+echo "✅ initialData.ts создан"
+echo "✅ FileTree.tsx исправлен"  
+echo "✅ MonacoEditor.tsx исправлен"
+
+# Тестируем сборку
+echo "🧪 Тестируем исправленный код..."
+npm run build
+
+if [ $? -eq 0 ]; then
+  echo "✅ Все TypeScript ошибки исправлены!"
+  echo "🎯 Monaco Editor готов к использованию"
+  echo "🚀 Переходим к следующей фазе улучшений"
+else
+  echo "❌ Остались ошибки - проверьте консоль"
+fi

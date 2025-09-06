@@ -1,45 +1,13 @@
 import { useState, useCallback } from 'react';
-import type { FileItem, TabItem, FileManagerState } from '../types';
+import type { FileItem, TabItem } from '../types';
+import { initialFiles } from '../utils/initialData';
 
-const initialFiles: FileItem[] = [
-  {
-    id: 'src',
-    name: 'src',
-    type: 'folder',
-    expanded: true,
-    children: [
-      {
-        id: 'app-tsx',
-        name: 'App.tsx',
-        type: 'file',
-        content: '// Clean TypeScript App\nimport React from "react";\n\nfunction App() {\n  return <div>Hello, Clean Architecture!</div>;\n}\n\nexport default App;',
-        language: 'typescript'
-      }
-    ]
-  },
-  {
-    id: 'readme',
-    name: 'README.md',
-    type: 'file',
-    content: '# iCoder Plus v2.0\n\nClean TypeScript + Tailwind architecture\n\n## Features\n- TypeScript for type safety\n- Tailwind CSS for styling\n- Clean component structure\n- No custom CSS bloat',
-    language: 'markdown'
-  }
-];
-
-export function useFileManager(): FileManagerState & {
-  createFile: (parentId: string | null, name: string, content?: string) => void;
-  createFolder: (parentId: string | null, name: string) => void;
-  openFile: (file: FileItem) => void;
-  closeTab: (tab: TabItem) => void;
-  setActiveTab: (tab: TabItem) => void;
-  toggleFolder: (folder: FileItem) => void;
-  updateFileContent: (fileId: string, content: string) => void;
-  setSearchQuery: (query: string) => void;
-} {
+export function useFileManager() {
   const [fileTree, setFileTree] = useState<FileItem[]>(initialFiles);
   const [openTabs, setOpenTabs] = useState<TabItem[]>([]);
   const [activeTab, setActiveTab] = useState<TabItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -49,24 +17,13 @@ export function useFileManager(): FileManagerState & {
       name,
       type: 'file',
       content,
-      language: name.endsWith('.ts') || name.endsWith('.tsx') ? 'typescript' : 'javascript'
     };
-
+    
     if (parentId) {
-      setFileTree(tree => tree.map(item => {
-        if (item.id === parentId && item.type === 'folder') {
-          return {
-            ...item,
-            children: [...(item.children || []), newFile]
-          };
-        }
-        return item;
-      }));
+      setFileTree(prev => updateFileTree(prev, parentId, newFile));
     } else {
-      setFileTree(tree => [...tree, newFile]);
+      setFileTree(prev => [...prev, newFile]);
     }
-
-    openFile(newFile);
   }, []);
 
   const createFolder = useCallback((parentId: string | null, name: string) => {
@@ -74,28 +31,39 @@ export function useFileManager(): FileManagerState & {
       id: generateId(),
       name,
       type: 'folder',
-      expanded: false,
-      children: []
+      children: [],
     };
-
+    
     if (parentId) {
-      setFileTree(tree => tree.map(item => {
-        if (item.id === parentId && item.type === 'folder') {
-          return {
-            ...item,
-            children: [...(item.children || []), newFolder]
-          };
-        }
-        return item;
-      }));
+      setFileTree(prev => updateFileTree(prev, parentId, newFolder));
     } else {
-      setFileTree(tree => [...tree, newFolder]);
+      setFileTree(prev => [...prev, newFolder]);
     }
   }, []);
 
+  const updateFileTree = (files: FileItem[], parentId: string, newItem: FileItem): FileItem[] => {
+    return files.map(file => {
+      if (file.id === parentId && file.type === 'folder') {
+        return {
+          ...file,
+          children: [...(file.children || []), newItem]
+        };
+      }
+      if (file.children) {
+        return {
+          ...file,
+          children: updateFileTree(file.children, parentId, newItem)
+        };
+      }
+      return file;
+    });
+  };
+
   const openFile = useCallback((file: FileItem) => {
     if (file.type !== 'file') return;
-
+    
+    setSelectedFileId(file.id);
+    
     const existingTab = openTabs.find(tab => tab.id === file.id);
     if (existingTab) {
       setActiveTab(existingTab);
@@ -106,54 +74,71 @@ export function useFileManager(): FileManagerState & {
       id: file.id,
       name: file.name,
       content: file.content || '',
-      language: file.language
+      modified: false,
     };
 
-    setOpenTabs(tabs => [...tabs, newTab]);
+    setOpenTabs(prev => [...prev, newTab]);
     setActiveTab(newTab);
   }, [openTabs]);
 
-  const closeTab = useCallback((tab: TabItem) => {
-    setOpenTabs(tabs => {
-      const newTabs = tabs.filter(t => t.id !== tab.id);
-      if (activeTab?.id === tab.id) {
-        setActiveTab(newTabs.length > 0 ? newTabs[newTabs.length - 1] : null);
+  const closeTab = useCallback((tabId: string) => {
+    setOpenTabs(prev => prev.filter(tab => tab.id !== tabId));
+    setActiveTab(prev => {
+      if (prev?.id === tabId) {
+        const remainingTabs = openTabs.filter(tab => tab.id !== tabId);
+        return remainingTabs.length > 0 ? remainingTabs[remainingTabs.length - 1] : null;
       }
-      return newTabs;
+      return prev;
     });
-  }, [activeTab]);
+  }, [openTabs]);
 
-  const toggleFolder = useCallback((folder: FileItem) => {
-    setFileTree(tree => tree.map(item => {
-      if (item.id === folder.id) {
-        return { ...item, expanded: !item.expanded };
-      }
-      return item;
-    }));
-  }, []);
+  // Исправленный setActiveTab - принимает string (id) вместо TabItem
+  const setActiveTabById = useCallback((tabId: string) => {
+    const tab = openTabs.find(t => t.id === tabId);
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [openTabs]);
 
   const updateFileContent = useCallback((fileId: string, content: string) => {
-    setOpenTabs(tabs => tabs.map(tab => 
-      tab.id === fileId ? { ...tab, content, isDirty: true } : tab
+    setOpenTabs(prev => prev.map(tab => 
+      tab.id === fileId 
+        ? { ...tab, content, modified: true }
+        : tab
     ));
     
     if (activeTab?.id === fileId) {
-      setActiveTab({ ...activeTab, content, isDirty: true });
+      setActiveTab(prev => prev ? { ...prev, content, modified: true } : null);
     }
   }, [activeTab]);
 
+  const renameFile = useCallback((id: string, newName: string) => {
+    console.log('Rename file:', id, newName);
+    // TODO: Implement rename logic
+  }, []);
+
+  const deleteFile = useCallback((id: string) => {
+    console.log('Delete file:', id);
+    // TODO: Implement delete logic
+  }, []);
+
   return {
+    // State
     fileTree,
     openTabs,
     activeTab,
     searchQuery,
+    selectedFileId,
+    
+    // Actions - правильные типы для MainEditor
     createFile,
     createFolder,
     openFile,
     closeTab,
-    setActiveTab,
-    toggleFolder,
+    setActiveTab: setActiveTabById, // Теперь принимает string
     updateFileContent,
-    setSearchQuery
+    setSearchQuery,
+    renameFile,
+    deleteFile,
   };
 }

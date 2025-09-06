@@ -1,3 +1,51 @@
+#!/bin/bash
+
+echo "🔧 ИСПРАВЛЕНИЕ ОСТАВШИХСЯ PROPS ОШИБОК"
+echo "===================================="
+
+# 1. Проверить и исправить LeftSidebar.tsx - убрать требование isVisible
+cat > src/components/panels/LeftSidebar.tsx << 'EOF'
+import React from 'react';
+import { FileTree } from '../FileTree';
+import type { FileItem } from '../../types';
+
+interface LeftSidebarProps {
+  files: FileItem[];
+  selectedFileId: string | null;
+  onFileSelect: (file: FileItem) => void;
+  onFileCreate: (parentId: string | null, name: string, type: 'file' | 'folder') => void;
+  onFileRename: (id: string, newName: string) => void;
+  onFileDelete: (id: string) => void;
+  onSearchQuery: (query: string) => void;
+}
+
+export const LeftSidebar: React.FC<LeftSidebarProps> = ({
+  files,
+  selectedFileId,
+  onFileSelect,
+  onFileCreate,
+  onFileRename,
+  onFileDelete,
+  onSearchQuery
+}) => {
+  return (
+    <div className="w-64 bg-gray-900 border-r border-gray-700 h-full">
+      <FileTree
+        files={files}
+        onFileSelect={onFileSelect}
+        selectedFileId={selectedFileId}
+        onFileCreate={onFileCreate}
+        onFileRename={onFileRename}
+        onFileDelete={onFileDelete}
+        setSearchQuery={onSearchQuery}
+      />
+    </div>
+  );
+};
+EOF
+
+# 2. Исправить BottomTerminal.tsx - передать props в VSCodeTerminal
+cat > src/components/layout/BottomTerminal.tsx << 'EOF'
 import React, { useState, useRef, useEffect } from 'react';
 import { Maximize2, Minimize2, X } from 'lucide-react';
 import { VSCodeTerminal } from '../VSCodeTerminal';
@@ -98,3 +146,30 @@ export const BottomTerminal: React.FC<BottomTerminalProps> = ({
     </div>
   );
 };
+EOF
+
+echo "✅ LeftSidebar.tsx исправлен - убран обязательный isVisible"
+echo "✅ BottomTerminal.tsx исправлен - добавлены props для VSCodeTerminal"
+
+# Финальное тестирование
+echo "🧪 Тестируем исправления props..."
+npm run build
+
+if [ $? -eq 0 ]; then
+  echo ""
+  echo "🎉 ВСЕ PROPS ОШИБКИ ИСПРАВЛЕНЫ!"
+  echo "🏗️ АРХИТЕКТУРА ПОЛНОСТЬЮ СИНХРОНИЗИРОВАНА!"
+  echo ""
+  echo "📋 Финальная структура:"
+  echo "   ✅ AppShell (контейнер)"
+  echo "   ✅ LeftSidebar (файловая система)"
+  echo "   ✅ MainEditor (центральный редактор)"
+  echo "   ✅ RightPanel (AI ассистенты)"
+  echo "   ✅ BottomTerminal (терминал)"
+  echo "   ✅ StatusBar (статус)"
+  echo ""
+  echo "🚀 Проект готов к запуску: npm run dev"
+  echo "🌐 URL: http://localhost:5173"
+else
+  echo "❌ Остались ошибки - проверьте консоль"
+fi

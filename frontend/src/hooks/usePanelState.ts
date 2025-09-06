@@ -8,6 +8,9 @@ interface PanelState {
   isRightCollapsed: boolean;
   isBottomCollapsed: boolean;
   isStatusCollapsed: boolean;
+  leftVisible: boolean;
+  rightVisible: boolean;
+  bottomVisible: boolean;
 }
 
 export function usePanelState() {
@@ -19,18 +22,33 @@ export function usePanelState() {
     isRightCollapsed: false,
     isBottomCollapsed: false,
     isStatusCollapsed: false,
+    leftVisible: true,
+    rightVisible: true,
+    bottomVisible: true,
   });
 
   const toggleLeft = useCallback(() => {
-    setPanelState(prev => ({ ...prev, isLeftCollapsed: !prev.isLeftCollapsed }));
+    setPanelState(prev => ({ 
+      ...prev, 
+      isLeftCollapsed: !prev.isLeftCollapsed,
+      leftVisible: !prev.leftVisible 
+    }));
   }, []);
 
   const toggleRight = useCallback(() => {
-    setPanelState(prev => ({ ...prev, isRightCollapsed: !prev.isRightCollapsed }));
+    setPanelState(prev => ({ 
+      ...prev, 
+      isRightCollapsed: !prev.isRightCollapsed,
+      rightVisible: !prev.rightVisible 
+    }));
   }, []);
 
   const toggleBottom = useCallback(() => {
-    setPanelState(prev => ({ ...prev, isBottomCollapsed: !prev.isBottomCollapsed }));
+    setPanelState(prev => ({ 
+      ...prev, 
+      isBottomCollapsed: !prev.isBottomCollapsed,
+      bottomVisible: !prev.bottomVisible 
+    }));
   }, []);
 
   const toggleStatus = useCallback(() => {
@@ -49,6 +67,10 @@ export function usePanelState() {
     setPanelState(prev => ({ ...prev, rightWidth: Math.max(250, Math.min(500, width)) }));
   }, []);
 
+  const setBottomVisible = useCallback((visible: boolean) => {
+    setPanelState(prev => ({ ...prev, bottomVisible: visible }));
+  }, []);
+
   return {
     ...panelState,
     toggleLeft,
@@ -58,5 +80,6 @@ export function usePanelState() {
     setBottomHeight,
     setLeftWidth,
     setRightWidth,
+    setBottomVisible,
   };
 }

@@ -1,59 +1,60 @@
-import { ChevronUp, ChevronDown, Circle, GitBranch, Wifi } from 'lucide-react';
+import React from 'react';
+import { Wifi, GitBranch, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface StatusBarProps {
-  isCollapsed: boolean;
-  onToggle: () => void;
+  isCollapsed?: boolean;
+  onToggle?: () => void;
 }
 
-export function StatusBar({ isCollapsed, onToggle }: StatusBarProps) {
+export const StatusBar: React.FC<StatusBarProps> = ({ 
+  isCollapsed = false, 
+  onToggle = () => {} 
+}) => {
   if (isCollapsed) {
     return (
       <div 
-        className="h-1 bg-blue-600 cursor-pointer hover:bg-blue-500 transition-colors"
+        className="h-1 bg-blue-500 cursor-pointer hover:bg-blue-400 transition-colors"
         onClick={onToggle}
-        title="Expand Status Bar"
+        title="Expand status bar"
       />
     );
   }
 
   return (
-    <div className="h-6 bg-blue-600 flex items-center justify-between px-3 text-xs text-white">
-      {/* Left Side */}
-      <div className="flex items-center space-x-4">
-        <div className="flex items-center">
-          <Circle size={8} className="text-green-400 fill-current mr-1" />
+    <div className="h-6 bg-blue-600 text-white text-xs flex items-center justify-between px-3">
+      {/* Left Section */}
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1">
+          <CheckCircle size={12} className="text-green-300" />
           <span>Backend Connected</span>
         </div>
         
-        <div className="flex items-center">
-          <GitBranch size={12} className="mr-1" />
+        <div className="flex items-center gap-1">
+          <GitBranch size={12} />
           <span>main</span>
         </div>
         
-        <div className="flex items-center">
-          <Wifi size={12} className="mr-1" />
-          <span>API Ready</span>
+        <div className="flex items-center gap-1">
+          <Wifi size={12} />
+          <span>api.icoder.swapoil.de</span>
         </div>
       </div>
 
-      {/* Center */}
-      <div className="flex items-center space-x-4">
-        <span>JavaScript</span>
+      {/* Right Section */}
+      <div className="flex items-center gap-4">
+        <span>TypeScript</span>
         <span>UTF-8</span>
+        <span>LF</span>
         <span>Ln 1, Col 1</span>
-      </div>
-
-      {/* Right Side */}
-      <div className="flex items-center space-x-2">
-        <span>iCoder Plus starting...</span>
-        <button
+        
+        <button 
           onClick={onToggle}
-          className="p-1 hover:bg-blue-500 rounded"
-          title="Collapse Status Bar"
+          className="hover:bg-blue-700 px-1 rounded"
+          title="Collapse status bar"
         >
-          <ChevronDown size={10} />
+          ×
         </button>
       </div>
     </div>
   );
-}
+};

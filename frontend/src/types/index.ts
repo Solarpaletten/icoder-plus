@@ -13,10 +13,10 @@ export interface TabItem {
   name: string;
   content: string;
   language?: string;
-  isDirty?: boolean;
+  modified?: boolean;
 }
 
-export type AgentType = 'dashka' | 'claudy';
+export type AgentType = 'dashka' | 'claudy' | 'both';
 
 export interface FileManagerState {
   fileTree: FileItem[];

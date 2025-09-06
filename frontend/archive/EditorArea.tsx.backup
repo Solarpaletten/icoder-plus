@@ -3,35 +3,37 @@ import { X, Plus } from 'lucide-react';
 import { MonacoEditor } from '../MonacoEditor';
 import type { TabItem } from '../../types';
 
-interface MainEditorProps {
-  openTabs: TabItem[];
-  activeTab: TabItem | null;
-  closeTab: (id: string) => void;
-  setActiveTab: (id: string) => void;
-  updateFileContent: (fileId: string, content: string) => void;
+interface EditorAreaProps {
+  tabs: TabItem[];
+  activeTabId: string | null;
+  onTabClose: (id: string) => void;
+  onTabSelect: (id: string) => void;
+  onContentChange: (id: string, content: string) => void;
 }
 
-export const MainEditor: React.FC<MainEditorProps> = ({
-  openTabs,
-  activeTab,
-  closeTab,
-  setActiveTab,
-  updateFileContent
+export const EditorArea: React.FC<EditorAreaProps> = ({
+  tabs,
+  activeTabId,
+  onTabClose,
+  onTabSelect,
+  onContentChange
 }) => {
+  const activeTab = tabs.find(tab => tab.id === activeTabId);
+
   return (
     <div className="flex flex-col h-full bg-gray-900">
       {/* Tab Bar */}
       <div className="flex bg-gray-800 border-b border-gray-700 min-h-[40px]">
         <div className="flex flex-1 overflow-x-auto">
-          {openTabs.map((tab) => (
+          {tabs.map((tab) => (
             <div
               key={tab.id}
               className={`group flex items-center px-3 py-2 border-r border-gray-700 cursor-pointer min-w-0 max-w-[200px]
-                ${tab.id === activeTab?.id 
+                ${tab.id === activeTabId 
                   ? 'bg-gray-900 text-white border-t-2 border-t-blue-500' 
                   : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                 }`}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => onTabSelect(tab.id)}
             >
               {/* File Icon */}
               <div className="mr-2 flex-shrink-0">
@@ -53,7 +55,7 @@ export const MainEditor: React.FC<MainEditorProps> = ({
                 className="ml-auto opacity-0 group-hover:opacity-100 hover:bg-gray-600 rounded p-0.5 flex-shrink-0"
                 onClick={(e) => {
                   e.stopPropagation();
-                  closeTab(tab.id);
+                  onTabClose(tab.id);
                 }}
                 aria-label="Close tab"
               >
@@ -78,7 +80,7 @@ export const MainEditor: React.FC<MainEditorProps> = ({
           <MonacoEditor
             filename={activeTab.name}
             content={activeTab.content || ''}
-            onChange={(content) => updateFileContent(activeTab.id, content)}
+            onChange={(content) => onContentChange(activeTab.id, content)}
           />
         ) : (
           <div className="flex items-center justify-center h-full text-gray-400">

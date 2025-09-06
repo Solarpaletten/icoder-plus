@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { ChevronUp, ChevronDown, Maximize2, Minimize2, X } from 'lucide-react';
+import { ChevronUp, ChevronDown, Maximize2, Minimize2, Terminal as TerminalIcon } from 'lucide-react';
 import { Terminal } from '../Terminal';
 
 interface BottomTerminalProps {
@@ -12,7 +12,6 @@ interface BottomTerminalProps {
 export function BottomTerminal({ isCollapsed, onToggle, height, onResize }: BottomTerminalProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
-  const terminalRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -22,7 +21,7 @@ export function BottomTerminal({ isCollapsed, onToggle, height, onResize }: Bott
 
     const handleMouseMove = (ev: MouseEvent) => {
       const deltaY = startY - ev.clientY;
-      const newHeight = Math.max(80, Math.min(600, startHeight + deltaY));
+      const newHeight = Math.max(150, Math.min(600, startHeight + deltaY));
       onResize(newHeight);
     };
 
@@ -38,10 +37,10 @@ export function BottomTerminal({ isCollapsed, onToggle, height, onResize }: Bott
 
   const handleMaximize = () => {
     if (isMaximized) {
-      onResize(200);
+      onResize(250);
       setIsMaximized(false);
     } else {
-      onResize(400);
+      onResize(500);
       setIsMaximized(true);
     }
   };
@@ -49,10 +48,13 @@ export function BottomTerminal({ isCollapsed, onToggle, height, onResize }: Bott
   if (isCollapsed) {
     return (
       <div 
-        className="h-6 bg-gray-800 border-t border-gray-700 flex items-center justify-between px-3 cursor-pointer hover:bg-gray-700"
+        className="h-8 bg-gray-800 border-t border-gray-700 flex items-center justify-between px-3 cursor-pointer hover:bg-gray-700 transition-colors"
         onClick={onToggle}
       >
-        <span className="text-xs text-gray-400">Terminal</span>
+        <div className="flex items-center space-x-2">
+          <TerminalIcon size={14} className="text-gray-400" />
+          <span className="text-xs text-gray-300 font-medium">TERMINAL</span>
+        </div>
         <ChevronUp size={12} className="text-gray-400" />
       </div>
     );
@@ -60,7 +62,6 @@ export function BottomTerminal({ isCollapsed, onToggle, height, onResize }: Bott
 
   return (
     <div 
-      ref={terminalRef}
       className="flex flex-col bg-gray-900 border-t border-gray-700"
       style={{ height: `${height}px` }}
     >
@@ -79,7 +80,10 @@ export function BottomTerminal({ isCollapsed, onToggle, height, onResize }: Bott
 
       {/* Terminal Header */}
       <div className="h-8 bg-gray-800 flex items-center justify-between px-3 border-b border-gray-700 flex-shrink-0">
-        <span className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Terminal</span>
+        <div className="flex items-center space-x-2">
+          <TerminalIcon size={14} className="text-gray-300" />
+          <span className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Terminal</span>
+        </div>
         
         <div className="flex items-center space-x-1">
           <button
@@ -102,7 +106,7 @@ export function BottomTerminal({ isCollapsed, onToggle, height, onResize }: Bott
 
       {/* Terminal Content */}
       <div className="flex-1 overflow-hidden">
-        <Terminal />
+        <Terminal isVisible={!isCollapsed} height={height} />
       </div>
     </div>
   );

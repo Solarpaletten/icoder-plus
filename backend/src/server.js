@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -8,19 +9,14 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
+const { setupTerminalWebSocket } = require('./routes/terminal');
+
 const aiRoutes = require('./routes/aiRoutes');
 
 const app = express();
-const server = createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: ['http://localhost:5173', 'https://icoder-solar.onrender.com'],
-    methods: ['GET', 'POST']
-  }
-});
-
 const PORT = process.env.PORT || 3008;
 
+// Ваши существующие middleware и routes...
 // ============================================================================
 // LOGGING SETUP
 // ============================================================================
@@ -74,8 +70,9 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.use((req, res, next) => {
+  const ip = req.headers['x-forwarded-for'] || req.ip;
   logger.info(`${req.method} ${req.path}`, {
-    ip: req.ip,
+    ip,
     userAgent: req.get('User-Agent'),
     timestamp: new Date().toISOString()
   });
@@ -232,9 +229,39 @@ app.get('/api/terminal/status', (req, res) => {
 // ============================================================================
 app.use('/api/ai', aiRoutes);
 
+// ==========================================================================
+// ERROR HANDLING
 // ============================================================================
-// WEBSOCKET SETUP FOR REAL-TIME TERMINAL
-// ============================================================================
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'Endpoint not found',
+    path: req.originalUrl,
+    availableEndpoints: [
+      'GET /health',
+      'POST /api/terminal/execute',
+      'GET /api/terminal/status',
+      'POST /api/ai/chat',
+      'GET /api/ai/status'
+    ]
+  });
+});
+
+// Создать HTTP сервер
+const server = createServer(app);
+
+// socket.io (нужен для твоих кастомных ивентов)
+
+const io = new Server(server, {
+  cors: {
+    origin: ['http://localhost:5173', 'https://icoder-solar.onrender.com'],
+    methods: ['GET', 'POST']
+  }
+});
+
+// Инициализация WebSocket сервера для терминала
+setupTerminalWebSocket(server);
+
+// socket.io тестовые события
 io.on('connection', (socket) => {
   logger.info('WebSocket client connected', { socketId: socket.id });
 
@@ -260,26 +287,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// ============================================================================
-// ERROR HANDLING
-// ============================================================================
-app.use('*', (req, res) => {
-  res.status(404).json({
-    error: 'Endpoint not found',
-    path: req.originalUrl,
-    availableEndpoints: [
-      'GET /health',
-      'POST /api/terminal/execute',
-      'GET /api/terminal/status',
-      'POST /api/ai/chat',
-      'GET /api/ai/status'
-    ]
-  });
-});
 
-// ============================================================================
-// SERVER STARTUP
-// ============================================================================
 server.listen(PORT, '0.0.0.0', () => {
   logger.info('iCoder Plus Backend started', {
     port: PORT,
@@ -288,12 +296,17 @@ server.listen(PORT, '0.0.0.0', () => {
     pid: process.pid
   });
 
-  console.log('🚀 iCoder Plus Backend started successfully');
+  console.log('\n🚀 iCoder Plus Backend started successfully');
   console.log(`📡 Server running on port ${PORT}`);
-  console.log(`🌐 Health check: http://localhost:${PORT}/health`);
-  console.log(`💻 Terminal API: http://localhost:${PORT}/api/terminal/*`);
-  console.log(`🤖 AI API: http://localhost:${PORT}/api/ai/* (mock mode)`);
-  console.log(`🔌 WebSocket: ws://localhost:${PORT}`);
+  console.log('─────────────────────────────────────────────');
+  console.log(`🌐 Health check:   http://localhost:${PORT}/health`);
+  console.log(`💻 REST API:       http://localhost:${PORT}/api/*`);
+  console.log(`🤖 AI API:         http://localhost:${PORT}/api/ai/*`);
+  console.log(`🖥 Terminal API:   http://localhost:${PORT}/api/terminal/*`);
+  console.log('─────────────────────────────────────────────');
+  console.log(`🔌 WebSocket (XTerm): ws://localhost:${PORT}/terminal`);
+  console.log(`🛰 Socket.IO:         ws://localhost:${PORT}/socket.io/`);
+  console.log('─────────────────────────────────────────────\n');
 });
 
 module.exports = { app, server, io };

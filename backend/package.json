@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "build": "echo 'No build step needed for backend'"    
+    "build": "echo 'No build step needed for backend'"
   },
   "dependencies": {
     "compression": "^1.8.1",
@@ -19,7 +19,8 @@
     "joi": "^17.9.2",
     "node-pty": "^1.0.0",
     "socket.io": "^4.7.2",
-    "winston": "^3.10.0"
+    "winston": "^3.10.0",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

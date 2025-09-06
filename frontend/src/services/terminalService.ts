@@ -9,7 +9,7 @@ class TerminalService {
   private callbacks: Map<string, Function[]> = new Map();
   private isConnected = false;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts = 3;
 
   constructor() {
     this.initializeCallbacks();
@@ -24,34 +24,34 @@ class TerminalService {
 
   async connect(): Promise<boolean> {
     try {
-      // В продакшене используйте WSS и правильный URL
+      // ИСПРАВЛЕН URL - используем правильный порт 3000
       const wsUrl = process.env.NODE_ENV === 'production' 
         ? 'wss://api.icoder.swapoil.de/terminal'
-        : 'ws://localhost:3008/terminal';
+        : 'ws://localhost:3000/terminal';
 
+      console.log('Connecting to:', wsUrl);
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
         this.isConnected = true;
         this.reconnectAttempts = 0;
         this.emit('connect', 'Connected to terminal server');
-        console.log('Terminal WebSocket connected');
+        console.log('Terminal WebSocket connected to', wsUrl);
       };
 
       this.ws.onmessage = (event) => {
-        try {
-          const message: TerminalMessage = JSON.parse(event.data);
-          this.emit('data', message.data);
-        } catch (error) {
-          // Fallback для простого текста
-          this.emit('data', event.data);
-        }
+        // Прямо передаем данные от сервера
+        this.emit('data', event.data);
       };
 
-      this.ws.onclose = () => {
+      this.ws.onclose = (event) => {
         this.isConnected = false;
+        console.log('Terminal WebSocket closed:', event.code, event.reason);
         this.emit('disconnect', 'Terminal connection closed');
-        this.handleReconnect();
+        
+        if (event.code !== 1000) { // Не нормальное закрытие
+          this.handleReconnect();
+        }
       };
 
       this.ws.onerror = (error) => {
@@ -70,29 +70,24 @@ class TerminalService {
   private handleReconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
+      const delay = 1000 * this.reconnectAttempts;
+      
+      console.log(`Reconnecting in ${delay}ms... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+      
       setTimeout(() => {
-        console.log(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
         this.connect();
-      }, 2000 * this.reconnectAttempts);
-    }
-  }
-
-  sendCommand(command: string) {
-    if (this.ws && this.isConnected) {
-      const message: TerminalMessage = {
-        type: 'command',
-        data: command,
-        timestamp: Date.now()
-      };
-      this.ws.send(JSON.stringify(message));
+      }, delay);
     } else {
-      this.emit('error', 'Terminal not connected');
+      this.emit('error', 'Max reconnection attempts reached');
     }
   }
 
   sendInput(input: string) {
     if (this.ws && this.isConnected) {
+      // Отправляем raw данные, без JSON обертки
       this.ws.send(input);
+    } else {
+      console.warn('Terminal not connected, cannot send:', input);
     }
   }
 
@@ -122,7 +117,7 @@ class TerminalService {
 
   disconnect() {
     if (this.ws) {
-      this.ws.close();
+      this.ws.close(1000, 'User disconnect');
       this.ws = null;
     }
     this.isConnected = false;

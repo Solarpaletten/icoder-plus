@@ -1,4 +1,4 @@
-import { XTermTerminal } from './XTermTerminal';
+import { VSCodeTerminal } from './VSCodeTerminal';
 
 interface TerminalProps {
   isVisible?: boolean;
@@ -6,5 +6,5 @@ interface TerminalProps {
 }
 
 export function Terminal({ isVisible = true, height = 200 }: TerminalProps) {
-  return <XTermTerminal isVisible={isVisible} height={height} />;
+  return <VSCodeTerminal isVisible={isVisible} height={height} />;
 }

@@ -1,3 +1,10 @@
+#!/bin/bash
+
+echo "🔧 ИСПРАВЛЕНИЕ ФОКУСА И DIMENSIONS ТЕРМИНАЛА"
+echo "=========================================="
+
+# Создать исправленную версию XTermTerminal с лучшей инициализацией
+cat > src/components/XTermTerminal.tsx << 'EOF'
 import { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
@@ -232,3 +239,27 @@ export function XTermTerminal({ isVisible, height }: XTermTerminalProps) {
     </div>
   );
 }
+EOF
+
+echo "✅ XTermTerminal исправлен с лучшей инициализацией"
+
+# Проверить сборку
+npm run build
+
+if [ $? -eq 0 ]; then
+    echo "✅ Исправления применены!"
+    echo "🎯 Изменения:"
+    echo "   • Исправлена ошибка dimensions"
+    echo "   • Добавлен принудительный фокус"
+    echo "   • Кнопка 'Focus Terminal'"
+    echo "   • Явные размеры cols/rows"
+    echo "   • Обработчик клика по терминалу"
+    echo "   • Подсказка внизу"
+    echo ""
+    echo "💡 Попробуйте:"
+    echo "   1. Кликнуть в область терминала"
+    echo "   2. Нажать кнопку 'Focus Terminal'"
+    echo "   3. Ввести: pwd или ls"
+else
+    echo "❌ Ошибки в сборке"
+fi

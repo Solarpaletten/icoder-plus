@@ -7,16 +7,30 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3008',
+        target: 'http://localhost:3000',
         changeOrigin: true
       },
       '/terminal': {
-        target: 'ws://localhost:3008',
+        target: 'ws://localhost:3000',
         ws: true
       }
     }
   },
   optimizeDeps: {
-    include: ['@xterm/xterm', '@xterm/addon-fit', '@xterm/addon-web-links']
+    include: [
+      '@monaco-editor/react',
+      'monaco-editor',
+      '@xterm/xterm', 
+      '@xterm/addon-fit', 
+      '@xterm/addon-web-links'
+    ]
+  },
+  define: {
+    global: 'globalThis',
+  },
+  resolve: {
+    alias: {
+      '@': '/src'
+    }
   }
 })

@@ -3,7 +3,8 @@ import { FileTree } from '../FileTree';
 import { SearchPanel } from './SearchPanel';
 import { GitPanel } from './GitPanel';
 import { ExtensionsPanel } from './ExtensionsPanel';
-import { Folder, Search, GitBranch, Package } from 'lucide-react';
+import { DebugPanel } from './DebugPanel';
+import { Folder, Search, GitBranch, Package, Bug } from 'lucide-react';
 import type { FileItem } from '../../types';
 
 interface LeftSidebarProps {
@@ -16,7 +17,7 @@ interface LeftSidebarProps {
   onSearchQuery: (query: string) => void;
 }
 
-type SidebarMode = 'explorer' | 'search' | 'git' | 'extensions';
+type SidebarMode = 'explorer' | 'search' | 'git' | 'extensions' | 'debug';
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   files,
@@ -48,64 +49,46 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         e.preventDefault();
         setMode('extensions');
       }
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        setMode('debug');
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const tabs = [
+    { id: 'explorer', icon: Folder, label: 'EXPLORER', hotkey: 'Ctrl+Shift+E' },
+    { id: 'search', icon: Search, label: 'SEARCH', hotkey: 'Ctrl+Shift+F' },
+    { id: 'git', icon: GitBranch, label: 'GIT', hotkey: 'Ctrl+Shift+G' },
+    { id: 'extensions', icon: Package, label: 'EXT', hotkey: 'Ctrl+Shift+X' },
+    { id: 'debug', icon: Bug, label: 'DEBUG', hotkey: 'Ctrl+Shift+D' }
+  ];
+
   return (
     <div className="w-64 bg-gray-900 border-r border-gray-700 h-full flex flex-col">
       {/* Sidebar Tabs */}
-      <div className="flex border-b border-gray-700">
-        <button
-          className={`flex-1 flex items-center justify-center py-2 px-1 text-xs font-medium
-            ${mode === 'explorer' 
-              ? 'bg-gray-800 text-white border-b-2 border-blue-500' 
-              : 'text-gray-400 hover:text-white hover:bg-gray-800'
-            }`}
-          onClick={() => setMode('explorer')}
-          title="Explorer (Ctrl+Shift+E)"
-        >
-          <Folder size={12} className="mr-1" />
-          EXPLORER
-        </button>
-        <button
-          className={`flex-1 flex items-center justify-center py-2 px-1 text-xs font-medium
-            ${mode === 'search' 
-              ? 'bg-gray-800 text-white border-b-2 border-blue-500' 
-              : 'text-gray-400 hover:text-white hover:bg-gray-800'
-            }`}
-          onClick={() => setMode('search')}
-          title="Search (Ctrl+Shift+F)"
-        >
-          <Search size={12} className="mr-1" />
-          SEARCH
-        </button>
-        <button
-          className={`flex-1 flex items-center justify-center py-2 px-1 text-xs font-medium
-            ${mode === 'git' 
-              ? 'bg-gray-800 text-white border-b-2 border-blue-500' 
-              : 'text-gray-400 hover:text-white hover:bg-gray-800'
-            }`}
-          onClick={() => setMode('git')}
-          title="Source Control (Ctrl+Shift+G)"
-        >
-          <GitBranch size={12} className="mr-1" />
-          GIT
-        </button>
-        <button
-          className={`flex-1 flex items-center justify-center py-2 px-1 text-xs font-medium
-            ${mode === 'extensions' 
-              ? 'bg-gray-800 text-white border-b-2 border-blue-500' 
-              : 'text-gray-400 hover:text-white hover:bg-gray-800'
-            }`}
-          onClick={() => setMode('extensions')}
-          title="Extensions (Ctrl+Shift+X)"
-        >
-          <Package size={12} className="mr-1" />
-          EXT
-        </button>
+      <div className="flex border-b border-gray-700 overflow-x-auto">
+        {tabs.map(tab => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              className={`flex-1 flex items-center justify-center py-2 px-1 text-xs font-medium min-w-0
+                ${mode === tab.id 
+                  ? 'bg-gray-800 text-white border-b-2 border-blue-500' 
+                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                }`}
+              onClick={() => setMode(tab.id as SidebarMode)}
+              title={`${tab.label} (${tab.hotkey})`}
+            >
+              <Icon size={12} className="mr-1 flex-shrink-0" />
+              <span className="truncate">{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Panel Content */}
@@ -140,6 +123,14 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         
         {mode === 'extensions' && (
           <ExtensionsPanel
+            onClose={() => setMode('explorer')}
+          />
+        )}
+        
+        {mode === 'debug' && (
+          <DebugPanel
+            files={files}
+            onFileSelect={onFileSelect}
             onClose={() => setMode('explorer')}
           />
         )}

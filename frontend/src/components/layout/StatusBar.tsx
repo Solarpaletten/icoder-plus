@@ -1,5 +1,5 @@
 import React from 'react';
-import { GitBranch, Check, AlertCircle, Wifi } from 'lucide-react';
+import { GitBranch, Check, AlertCircle, Wifi, Bug, Play, Square } from 'lucide-react';
 
 interface StatusBarProps {
   isCollapsed: boolean;
@@ -22,6 +22,12 @@ export const StatusBar: React.FC<StatusBarProps> = ({ isCollapsed, onToggle }) =
         <div className="flex items-center space-x-1">
           <Check size={12} className="text-green-300" />
           <span>Clean</span>
+        </div>
+
+        {/* Debug Status */}
+        <div className="flex items-center space-x-1 hover:bg-blue-700 px-2 py-1 rounded cursor-pointer">
+          <Bug size={12} />
+          <span>No Debug</span>
         </div>
         
         {/* Connection Status */}

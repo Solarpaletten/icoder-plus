@@ -1,3 +1,74 @@
+#!/bin/bash
+
+echo "🔧 PHASE 4.6 FIX: BLACK SCREEN REACT ERRORS"
+echo "==========================================="
+echo "Цель: Исправить Maximum update depth exceeded и черный экран"
+
+# 1. Исправить BottomTerminal - убрать проблемный ref
+cat > src/components/layout/BottomTerminal.tsx << 'EOF'
+import React, { useState, useRef } from 'react';
+import { MultiTerminalManager } from '../terminal/MultiTerminalManager';
+import { TerminalHeader } from '../terminal/TerminalHeader';
+
+interface BottomTerminalProps {
+  height: number;
+  onToggle: () => void;
+  onResize: (height: number) => void;
+}
+
+export const BottomTerminal: React.FC<BottomTerminalProps> = ({
+  height,
+  onToggle,
+  onResize
+}) => {
+  const [isMaximized, setIsMaximized] = useState(false);
+  const terminalManagerRef = useRef<{ createTerminal: (shell?: 'bash' | 'zsh' | 'powershell' | 'node' | 'git') => void } | null>(null);
+
+  const handleMaximize = () => {
+    if (isMaximized) {
+      onResize(250);
+      setIsMaximized(false);
+    } else {
+      const parentHeight = window.innerHeight - 100;
+      const maxHeight = Math.floor(parentHeight * 0.95);
+      onResize(maxHeight);
+      setIsMaximized(true);
+    }
+  };
+
+  const handleNewTerminal = (shell: 'bash' | 'zsh' | 'powershell' | 'node' | 'git') => {
+    if (terminalManagerRef.current) {
+      terminalManagerRef.current.createTerminal(shell);
+    }
+  };
+
+  return (
+    <div className="bg-gray-900 border-t border-gray-700 flex flex-col h-full">
+      {/* Terminal Header with New Terminal Button */}
+      <TerminalHeader
+        height={height}
+        isMaximized={isMaximized}
+        onNewTerminal={handleNewTerminal}
+        onMaximize={handleMaximize}
+        onToggle={onToggle}
+      />
+      
+      {/* Multi Terminal Content with Sidebar */}
+      <div className="flex-1 overflow-hidden">
+        <MultiTerminalManager 
+          height={height - 32}
+          ref={terminalManagerRef}
+        />
+      </div>
+    </div>
+  );
+};
+EOF
+
+echo "✅ BottomTerminal исправлен - убрана проблема с ref"
+
+# 2. Исправить MultiTerminalManager - убрать бесконечный цикл
+cat > src/components/terminal/MultiTerminalManager.tsx << 'EOF'
 import React, { useState, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Plus } from 'lucide-react';
 import { SplitContainer } from './SplitContainer';
@@ -270,3 +341,28 @@ export const MultiTerminalManager = forwardRef<MultiTerminalManagerRef, MultiTer
 });
 
 MultiTerminalManager.displayName = 'MultiTerminalManager';
+EOF
+
+echo "✅ MultiTerminalManager исправлен - убран бесконечный цикл с useCallback"
+
+# 3. Тестируем исправления
+echo "🧪 Тестируем исправления черного экрана..."
+npm run build
+
+if [ $? -eq 0 ]; then
+  echo ""
+  echo "🎉 ЧЕРНЫЙ ЭКРАН ИСПРАВЛЕН!"
+  echo "🏆 React ошибки Maximum update depth exceeded устранены!"
+  echo ""
+  echo "📋 Исправления:"
+  echo "   ✅ Убран бесконечный цикл рендеринга в MultiTerminalManager"
+  echo "   ✅ Добавлены useCallback для предотвращения лишних ререндеров"
+  echo "   ✅ Исправлена работа с ref в BottomTerminal"
+  echo "   ✅ Стабилизированы обновления состояния терминалов"
+  echo "   ✅ Добавлены проверки на null/undefined"
+  echo ""
+  echo "🚀 Запустите: npm run dev"
+  echo "🎯 Теперь терминал должен отображаться без ошибок!"
+else
+  echo "❌ Остались ошибки - проверьте консоль"
+fi

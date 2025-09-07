@@ -1,5 +1,13 @@
+#!/bin/bash
+
+echo "🔧 PHASE 4.4: TYPESCRIPT FIX"
+echo "============================="
+echo "Цель: Исправить типы для node и git терминалов"
+
+# 1. Обновить VSCodeTerminal для поддержки новых типов shell
+cat > src/components/terminal/VSCodeTerminal.tsx << 'EOF'
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, X, Square } from 'lucide-react';
+import { ChevronDown, X, Plus, Square, Maximize2, Minimize2 } from 'lucide-react';
 
 interface VSCodeTerminalProps {
   id: string;
@@ -8,6 +16,7 @@ interface VSCodeTerminalProps {
   isActive: boolean;
   canClose?: boolean;
   onClose?: () => void;
+  onNewTerminal?: () => void;
   onSplitRight?: () => void;
   onSplitDown?: () => void;
   onFocus?: () => void;
@@ -21,6 +30,7 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
   isActive,
   canClose = true,
   onClose,
+  onNewTerminal,
   onSplitRight,
   onSplitDown,
   onFocus,
@@ -36,28 +46,50 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
     shell === 'git' ? 'git version 2.39.0' :
     'powershell: no job control in this shell',
     '',
+    shell === 'bash' ? 'The default interactive shell is now zsh.' :
+    shell === 'zsh' ? 'The default interactive shell is now zsh.' :
+    shell === 'node' ? 'Type ".help" for more information.' :
+    shell === 'git' ? 'Type "git --help" for more information.' :
+    'The default interactive shell is now powershell.',
+    shell === 'bash' ? 'To update your account to use zsh, please run `chsh -s /bin/zsh`.' :
+    shell === 'zsh' ? 'To update your account to use zsh, please run `chsh -s /bin/zsh`.' :
+    shell === 'node' ? 'Use Ctrl+C to exit REPL mode.' :
+    shell === 'git' ? 'Configure with: git config --global user.name "Your Name"' :
+    'To update your account to use powershell, please run `chsh -s /bin/powershell`.',
+    shell === 'bash' ? 'For more details, please visit https://support.apple.com/kb/HT208050.' :
+    shell === 'zsh' ? 'For more details, please visit https://support.apple.com/kb/HT208050.' :
+    shell === 'node' ? 'Documentation: https://nodejs.org/en/docs/' :
+    shell === 'git' ? 'Documentation: https://git-scm.com/docs' :
+    'For more details, please visit https://support.microsoft.com/powershell.',
+    `[${name}]-3.2$`,
+    shell === 'node' ? '> ' : shell === 'git' ? 'git> ' : `🟢 Connected to ${shell} backend`,
+    shell === 'node' ? '> ' : shell === 'git' ? 'git> ' : `${shell}: no job control in this shell`,
+    '',
+    shell === 'bash' ? 'The default interactive shell is now zsh.' :
+    shell === 'zsh' ? 'The default interactive shell is now zsh.' :
+    shell === 'node' ? '' :
+    shell === 'git' ? '' :
+    'The default interactive shell is now powershell.',
+    shell === 'bash' ? 'To update your account to use zsh, please run `chsh -s /bin/zsh`.' :
+    shell === 'zsh' ? 'To update your account to use zsh, please run `chsh -s /bin/zsh`.' :
+    shell === 'node' ? '' :
+    shell === 'git' ? '' :
+    'To update your account to use powershell, please run `chsh -s /bin/powershell`.',
+    shell === 'bash' ? 'For more details, please visit https://support.apple.com/kb/HT208050.' :
+    shell === 'zsh' ? 'For more details, please visit https://support.apple.com/kb/HT208050.' :
+    shell === 'node' ? '' :
+    shell === 'git' ? '' :
+    'For more details, please visit https://support.microsoft.com/powershell.',
+    `[${name}]-3.2$`,
     `~/${shell === 'git' ? 'projects/icoder-plus' : shell === 'node' ? 'projects/icoder-plus' : 'projects/icoder-plus'}`
   ]);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [showMenu, setShowMenu] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
-  const [currentDirectory, setCurrentDirectory] = useState('~/projects/icoder-plus');
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [suggestionIndex, setSuggestionIndex] = useState(-1);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
-
-  // Mock file system for autocomplete
-  const mockFileSystem = {
-    '~/projects/icoder-plus': ['src', 'package.json', 'README.md', 'node_modules', 'dist', '.git'],
-    '~/projects/icoder-plus/src': ['components', 'hooks', 'utils', 'App.tsx', 'main.tsx'],
-    '~/projects/icoder-plus/src/components': ['terminal', 'layout', 'panels', 'AppShell.tsx'],
-    '~/projects/icoder-plus/src/components/terminal': ['MultiTerminalManager.tsx', 'VSCodeTerminal.tsx', 'TerminalSidebar.tsx'],
-    '~/projects/icoder-plus/src/components/layout': ['AppHeader.tsx', 'BottomTerminal.tsx', 'StatusBar.tsx'],
-    '~/projects/icoder-plus/src/components/panels': ['LeftSidebar.tsx', 'MainEditor.tsx', 'RightPanel.tsx']
-  };
 
   useEffect(() => {
     if (isActive && inputRef.current) {
@@ -93,45 +125,6 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
     }
   };
 
-  const getAutocompleteSuggestions = (input: string): string[] => {
-    const trimmedInput = input.trim();
-    
-    // Command completion
-    const commands = shell === 'node' ? ['.help', '.exit', '.clear'] :
-                    shell === 'git' ? ['status', 'log', 'branch', 'add', 'commit', 'push', 'pull', 'checkout', 'merge'] :
-                    ['ls', 'cd', 'pwd', 'mkdir', 'rm', 'cp', 'mv', 'cat', 'grep', 'find', 'npm', 'yarn', 'git', 'code', 'nano'];
-    
-    // If input is just a command prefix, suggest commands
-    if (!trimmedInput.includes(' ')) {
-      return commands.filter(cmd => cmd.startsWith(trimmedInput));
-    }
-    
-    // Directory/file completion for cd command
-    if (trimmedInput.startsWith('cd ')) {
-      const pathPrefix = trimmedInput.slice(3);
-      const currentDirFiles = mockFileSystem[currentDirectory as keyof typeof mockFileSystem] || [];
-      
-      return currentDirFiles
-        .filter(item => item.startsWith(pathPrefix))
-        .map(item => `cd ${item}`);
-    }
-    
-    // File completion for other commands
-    if (trimmedInput.match(/^(ls|cat|rm|mv|cp|nano|code)\s+/)) {
-      const parts = trimmedInput.split(' ');
-      const command = parts[0];
-      const pathPrefix = parts[parts.length - 1] || '';
-      
-      const currentDirFiles = mockFileSystem[currentDirectory as keyof typeof mockFileSystem] || [];
-      
-      return currentDirFiles
-        .filter(item => item.startsWith(pathPrefix))
-        .map(item => `${command} ${item}`);
-    }
-    
-    return [];
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       if (input.trim()) {
@@ -164,44 +157,24 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
             newHistory.push('commit a1b2c3d4e5f6g7h8i9j0 (HEAD -> main, origin/main)');
             newHistory.push('Author: Developer <dev@icoder.plus>');
             newHistory.push('Date:   Mon Sep 7 12:00:00 2025 +0300');
-            newHistory.push('    Phase 4.6: Terminal Creation & Autocomplete');
+            newHistory.push('    Phase 4.4: Terminal Sidebar Manager');
           } else if (command.startsWith('git branch')) {
             newHistory.push('* main');
-            newHistory.push('  feature/terminal-autocomplete');
+            newHistory.push('  feature/terminal-sidebar');
           } else {
             newHistory.push(`git: '${command.replace('git ', '')}' is not a git command.`);
           }
         } else {
           // Basic bash/zsh/powershell commands
           if (command === 'ls' || command === 'dir') {
-            const currentDirFiles = mockFileSystem[currentDirectory as keyof typeof mockFileSystem] || [];
-            newHistory.push(currentDirFiles.join('  '));
+            newHistory.push('README.md  package.json  src/  node_modules/');
           } else if (command === 'pwd') {
-            newHistory.push(currentDirectory);
+            newHistory.push(`/Users/${shell}/projects/icoder-plus`);
           } else if (command.startsWith('cd ')) {
-            const targetDir = command.slice(3).trim();
-            if (targetDir === '..') {
-              const pathParts = currentDirectory.split('/');
-              pathParts.pop();
-              const newDir = pathParts.join('/') || '~';
-              setCurrentDirectory(newDir);
-              newHistory.push(`Changed directory to ${newDir}`);
-            } else if (targetDir === '~' || targetDir === '') {
-              setCurrentDirectory('~/projects/icoder-plus');
-              newHistory.push('Changed directory to ~/projects/icoder-plus');
-            } else {
-              const newDir = `${currentDirectory}/${targetDir}`;
-              if (mockFileSystem[newDir as keyof typeof mockFileSystem]) {
-                setCurrentDirectory(newDir);
-                newHistory.push(`Changed directory to ${newDir}`);
-              } else {
-                newHistory.push(`cd: no such file or directory: ${targetDir}`);
-              }
-            }
+            newHistory.push(`Changed directory to ${command.slice(3)}`);
           } else if (command === 'clear') {
             setHistory([]);
             setInput('');
-            setSuggestions([]);
             return;
           } else {
             newHistory.push(`${shell}: command not found: ${command}`);
@@ -211,24 +184,18 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
         setHistory(newHistory);
         setCommandHistory(prev => [...prev, command]);
         setHistoryIndex(-1);
-        setSuggestions([]);
       }
       setInput('');
-      setSuggestionIndex(-1);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      if (suggestions.length > 0) {
-        setSuggestionIndex(prev => Math.max(0, prev - 1));
-      } else if (commandHistory.length > 0) {
+      if (commandHistory.length > 0) {
         const newIndex = historyIndex === -1 ? commandHistory.length - 1 : Math.max(0, historyIndex - 1);
         setHistoryIndex(newIndex);
         setInput(commandHistory[newIndex]);
       }
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      if (suggestions.length > 0) {
-        setSuggestionIndex(prev => Math.min(suggestions.length - 1, prev + 1));
-      } else if (historyIndex !== -1) {
+      if (historyIndex !== -1) {
         const newIndex = historyIndex + 1;
         if (newIndex < commandHistory.length) {
           setHistoryIndex(newIndex);
@@ -240,43 +207,15 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
       }
     } else if (e.key === 'Tab') {
       e.preventDefault();
-      const newSuggestions = getAutocompleteSuggestions(input);
+      // Basic tab completion
+      const commands = shell === 'node' ? ['.help', '.exit', '.clear'] :
+                      shell === 'git' ? ['status', 'log', 'branch', 'add', 'commit', 'push', 'pull'] :
+                      ['ls', 'cd', 'pwd', 'mkdir', 'rm', 'cp', 'mv', 'cat', 'grep', 'find'];
       
-      if (newSuggestions.length === 1) {
-        setInput(newSuggestions[0]);
-        setSuggestions([]);
-        setSuggestionIndex(-1);
-      } else if (newSuggestions.length > 1) {
-        setSuggestions(newSuggestions);
-        setSuggestionIndex(0);
+      const matches = commands.filter(cmd => cmd.startsWith(input));
+      if (matches.length === 1) {
+        setInput(shell === 'git' && !input.startsWith('git ') ? `git ${matches[0]}` : matches[0]);
       }
-    } else if (e.key === 'Escape') {
-      setSuggestions([]);
-      setSuggestionIndex(-1);
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setInput(value);
-    
-    // Update suggestions as user types
-    if (value.trim()) {
-      const newSuggestions = getAutocompleteSuggestions(value);
-      setSuggestions(newSuggestions.slice(0, 5)); // Limit to 5 suggestions
-      setSuggestionIndex(-1);
-    } else {
-      setSuggestions([]);
-      setSuggestionIndex(-1);
-    }
-  };
-
-  const handleSuggestionClick = (suggestion: string) => {
-    setInput(suggestion);
-    setSuggestions([]);
-    setSuggestionIndex(-1);
-    if (inputRef.current) {
-      inputRef.current.focus();
     }
   };
 
@@ -288,7 +227,7 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
   };
 
   return (
-    <div className={`flex flex-col h-full bg-gray-900 border border-gray-700 relative ${
+    <div className={`flex flex-col h-full bg-gray-900 border border-gray-700 ${
       isActive ? 'border-blue-500' : 'border-gray-700'
     }`}>
       {/* Terminal Header */}
@@ -312,6 +251,13 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
                 <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-600 rounded shadow-lg z-20 min-w-[120px]">
+                  <button
+                    className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-700 flex items-center gap-2"
+                    onClick={() => { onNewTerminal?.(); setShowMenu(false); }}
+                  >
+                    <Plus size={10} />
+                    New Terminal
+                  </button>
                   <button
                     className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-700 flex items-center gap-2"
                     onClick={() => { onSplitRight?.(); setShowMenu(false); }}
@@ -344,7 +290,7 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
 
       {/* Terminal Content */}
       <div 
-        className="flex-1 overflow-hidden cursor-text relative"
+        className="flex-1 overflow-hidden cursor-text"
         onClick={handleTerminalClick}
       >
         <div 
@@ -371,7 +317,7 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
               ref={inputRef}
               type="text"
               value={input}
-              onChange={handleInputChange}
+              onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               onFocus={onFocus}
               className="flex-1 bg-transparent outline-none text-gray-100"
@@ -384,27 +330,32 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
             />
           </div>
         </div>
-        
-        {/* Autocomplete Suggestions */}
-        {suggestions.length > 0 && (
-          <div className="absolute bottom-8 left-2 bg-gray-800 border border-gray-600 rounded shadow-lg z-20 min-w-[200px]">
-            {suggestions.map((suggestion, index) => (
-              <button
-                key={index}
-                onClick={() => handleSuggestionClick(suggestion)}
-                className={`w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 ${
-                  index === suggestionIndex 
-                    ? 'bg-blue-600 text-white' 
-                    : 'text-gray-300 hover:bg-gray-700'
-                }`}
-                style={{ fontFamily: 'Consolas, "Courier New", monospace' }}
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
 };
+EOF
+
+echo "✅ VSCodeTerminal обновлен для поддержки node и git терминалов"
+
+# 2. Тестируем исправления
+echo "🧪 Тестируем исправленные типы..."
+npm run build
+
+if [ $? -eq 0 ]; then
+  echo ""
+  echo "🎉 PHASE 4.4 TYPESCRIPT FIX ЗАВЕРШЕН!"
+  echo "🏆 Все типы исправлены, поддержка node и git терминалов добавлена!"
+  echo ""
+  echo "📋 Исправления:"
+  echo "   ✅ VSCodeTerminal поддерживает: bash, zsh, powershell, node, git"
+  echo "   ✅ Разные промпты: bash($), zsh(%), powershell(>), node(>), git(git>)"
+  echo "   ✅ Специфичные команды для каждого shell"
+  echo "   ✅ Tab completion для git команд"
+  echo "   ✅ Node.js REPL функциональность"
+  echo ""
+  echo "🚀 Запустите: npm run dev"
+  echo "🎯 Теперь доступны все типы терминалов без TypeScript ошибок!"
+else
+  echo "❌ Остались ошибки - проверьте консоль"
+fi

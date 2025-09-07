@@ -1,3 +1,206 @@
+#!/bin/bash
+
+echo "🔧 PHASE 4.7: TERMINAL AUTOCOMPLETE FIX"
+echo "======================================"
+echo "Цель: Убрать Shell Types из sidebar и добавить файловое автодополнение"
+
+# 1. Обновить TerminalSidebar - убрать Shell Types секцию
+cat > src/components/terminal/TerminalSidebar.tsx << 'EOF'
+import React from 'react';
+import { X, Square, ChevronRight, ChevronDown } from 'lucide-react';
+
+interface TerminalInstance {
+  id: string;
+  name: string;
+  shell: 'bash' | 'zsh' | 'powershell' | 'node' | 'git';
+  status: 'running' | 'stopped' | 'error';
+  isActive: boolean;
+  workingDirectory?: string;
+}
+
+interface TerminalSidebarProps {
+  terminals: TerminalInstance[];
+  isCollapsed: boolean;
+  activeTerminalId: string;
+  onTerminalSelect: (id: string) => void;
+  onTerminalCreate: (shell?: 'bash' | 'zsh' | 'powershell' | 'node' | 'git') => void;
+  onTerminalClose: (id: string) => void;
+  onTerminalSplit: (id: string, direction: 'horizontal' | 'vertical') => void;
+  onToggleCollapse: () => void;
+}
+
+export const TerminalSidebar: React.FC<TerminalSidebarProps> = ({
+  terminals,
+  isCollapsed,
+  activeTerminalId,
+  onTerminalSelect,
+  onTerminalClose,
+  onTerminalSplit,
+  onToggleCollapse
+}) => {
+  const getShellIcon = (shell: string) => {
+    switch (shell) {
+      case 'bash': return '🐚';
+      case 'zsh': return '⚡';
+      case 'powershell': return '💻';
+      case 'node': return '🟢';
+      case 'git': return '🔧';
+      default: return '💻';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'running': return 'bg-green-500';
+      case 'stopped': return 'bg-gray-500';
+      case 'error': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  if (isCollapsed) {
+    return (
+      <div className="w-12 bg-gray-800 border-l border-gray-700 flex flex-col">
+        <button
+          onClick={onToggleCollapse}
+          className="p-2 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors border-b border-gray-700"
+          title="Expand Terminal Panel"
+        >
+          <ChevronRight size={14} />
+        </button>
+        
+        <div className="flex-1 flex flex-col gap-1 p-2 overflow-y-auto">
+          {terminals.map(terminal => (
+            <button
+              key={terminal.id}
+              onClick={() => onTerminalSelect(terminal.id)}
+              className={`w-8 h-8 rounded flex items-center justify-center text-sm transition-colors relative ${
+                terminal.id === activeTerminalId
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+              title={`${terminal.name} (${terminal.shell})`}
+            >
+              <span className="text-sm">{getShellIcon(terminal.shell)}</span>
+              <div className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${getStatusColor(terminal.status)}`} />
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full bg-gray-800 border-l border-gray-700 flex flex-col min-w-0">
+      {/* Header */}
+      <div className="h-8 bg-gray-900 border-b border-gray-700 flex items-center justify-between px-3 flex-shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-xs font-medium text-gray-300 uppercase tracking-wide truncate">
+            TERMINALS
+          </span>
+          <span className="text-xs text-gray-500 flex-shrink-0">({terminals.length})</span>
+        </div>
+        
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            onClick={onToggleCollapse}
+            className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
+            title="Collapse Panel"
+          >
+            <ChevronDown size={12} />
+          </button>
+        </div>
+      </div>
+
+      {/* Terminal List */}
+      <div className="flex-1 overflow-y-auto">
+        {terminals.map(terminal => (
+          <div
+            key={terminal.id}
+            className={`group border-b border-gray-700 ${
+              terminal.id === activeTerminalId ? 'bg-gray-700' : 'hover:bg-gray-750'
+            }`}
+          >
+            <div
+              className="p-3 cursor-pointer"
+              onClick={() => onTerminalSelect(terminal.id)}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className="text-sm flex-shrink-0">{getShellIcon(terminal.shell)}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-200 truncate">
+                        {terminal.name}
+                      </span>
+                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getStatusColor(terminal.status)}`} />
+                    </div>
+                    {terminal.workingDirectory && (
+                      <div className="text-xs text-gray-400 truncate mt-1">
+                        {terminal.workingDirectory}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Terminal Actions */}
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTerminalSplit(terminal.id, 'horizontal');
+                    }}
+                    className="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-white"
+                    title="Split Right"
+                  >
+                    <Square size={10} className="rotate-90" />
+                  </button>
+                  
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTerminalSplit(terminal.id, 'vertical');
+                    }}
+                    className="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-white"
+                    title="Split Down"
+                  >
+                    <Square size={10} />
+                  </button>
+                  
+                  {terminals.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onTerminalClose(terminal.id);
+                      }}
+                      className="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-red-400"
+                      title="Close Terminal"
+                    >
+                      <X size={10} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Footer - Info Only */}
+      <div className="border-t border-gray-700 p-3 flex-shrink-0">
+        <div className="text-xs text-gray-500 text-center">
+          Use "New Terminal" button to create new terminals
+        </div>
+      </div>
+    </div>
+  );
+};
+EOF
+
+echo "✅ TerminalSidebar обновлен - убрана Shell Types секция"
+
+# 2. Улучшить VSCodeTerminal - добавить полное файловое автодополнение
+cat > src/components/terminal/VSCodeTerminal.tsx << 'EOF'
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, X, Square } from 'lucide-react';
 
@@ -471,3 +674,42 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
     </div>
   );
 };
+EOF
+
+echo "✅ VSCodeTerminal обновлен с полным файловым автодополнением"
+
+# 3. Тестируем обновления
+echo "🧪 Тестируем Phase 4.7 Terminal Autocomplete Fix..."
+npm run build
+
+if [ $? -eq 0 ]; then
+  echo ""
+  echo "🎉 PHASE 4.7 ЗАВЕРШЕН!"
+  echo "🏆 Terminal Autocomplete Fix успешно реализован!"
+  echo ""
+  echo "📋 Исправления:"
+  echo "   ✅ Убрана Shell Types секция из sidebar (нет дублирования)"
+  echo "   ✅ Добавлено файловое автодополнение для cat, rm, mv, cp"
+  echo "   ✅ Автодополнение для git add, git rm команд"
+  echo "   ✅ Автодополнение для npm run, yarn run скриптов"
+  echo "   ✅ Расширенная mock файловая система"
+  echo "   ✅ Функциональная команда cat с реальным выводом файлов"
+  echo "   ✅ Улучшенная навигация по подсказкам"
+  echo ""
+  echo "🎯 Теперь sidebar содержит только список терминалов, а автодополнение работает для всех файловых команд!"
+  echo ""
+  echo "🚀 Запустите: npm run dev"
+  echo ""
+  echo "📈 ФИНАЛЬНЫЙ СТАТУС PHASE 4:"
+  echo "   ✅ Phase 4.1: Terminal Max Height Fix"
+  echo "   ✅ Phase 4.2: Multiple Terminal Instances"
+  echo "   ✅ Phase 4.3: Terminal Splitting & UX Polish"
+  echo "   ✅ Phase 4.4: Terminal Sidebar Manager"
+  echo "   ✅ Phase 4.5: Resizable Terminal Areas"
+  echo "   ✅ Phase 4.6: Terminal Creation & Autocomplete"
+  echo "   ✅ Phase 4.7: Terminal Autocomplete Fix"
+  echo ""
+  echo "🏆 PHASE 4 ПОЛНОСТЬЮ ЗАВЕРШЕН! Готовы к Phase 5: Side Panel System?"
+else
+  echo "❌ Ошибки в сборке - проверьте консоль"
+fi

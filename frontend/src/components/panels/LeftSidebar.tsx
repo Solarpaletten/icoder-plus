@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { FileTree } from '../FileTree';
 import { SearchPanel } from './SearchPanel';
 import { GitPanel } from './GitPanel';
-import { Folder, Search, GitBranch } from 'lucide-react';
+import { ExtensionsPanel } from './ExtensionsPanel';
+import { Folder, Search, GitBranch, Package } from 'lucide-react';
 import type { FileItem } from '../../types';
 
 interface LeftSidebarProps {
@@ -15,7 +16,7 @@ interface LeftSidebarProps {
   onSearchQuery: (query: string) => void;
 }
 
-type SidebarMode = 'explorer' | 'search' | 'git';
+type SidebarMode = 'explorer' | 'search' | 'git' | 'extensions';
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   files,
@@ -43,6 +44,10 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         e.preventDefault();
         setMode('explorer');
       }
+      if (e.ctrlKey && e.shiftKey && e.key === 'X') {
+        e.preventDefault();
+        setMode('extensions');
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -54,7 +59,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
       {/* Sidebar Tabs */}
       <div className="flex border-b border-gray-700">
         <button
-          className={`flex-1 flex items-center justify-center py-2 px-2 text-xs font-medium
+          className={`flex-1 flex items-center justify-center py-2 px-1 text-xs font-medium
             ${mode === 'explorer' 
               ? 'bg-gray-800 text-white border-b-2 border-blue-500' 
               : 'text-gray-400 hover:text-white hover:bg-gray-800'
@@ -62,11 +67,11 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           onClick={() => setMode('explorer')}
           title="Explorer (Ctrl+Shift+E)"
         >
-          <Folder size={14} className="mr-1" />
+          <Folder size={12} className="mr-1" />
           EXPLORER
         </button>
         <button
-          className={`flex-1 flex items-center justify-center py-2 px-2 text-xs font-medium
+          className={`flex-1 flex items-center justify-center py-2 px-1 text-xs font-medium
             ${mode === 'search' 
               ? 'bg-gray-800 text-white border-b-2 border-blue-500' 
               : 'text-gray-400 hover:text-white hover:bg-gray-800'
@@ -74,11 +79,11 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           onClick={() => setMode('search')}
           title="Search (Ctrl+Shift+F)"
         >
-          <Search size={14} className="mr-1" />
+          <Search size={12} className="mr-1" />
           SEARCH
         </button>
         <button
-          className={`flex-1 flex items-center justify-center py-2 px-2 text-xs font-medium
+          className={`flex-1 flex items-center justify-center py-2 px-1 text-xs font-medium
             ${mode === 'git' 
               ? 'bg-gray-800 text-white border-b-2 border-blue-500' 
               : 'text-gray-400 hover:text-white hover:bg-gray-800'
@@ -86,8 +91,20 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           onClick={() => setMode('git')}
           title="Source Control (Ctrl+Shift+G)"
         >
-          <GitBranch size={14} className="mr-1" />
+          <GitBranch size={12} className="mr-1" />
           GIT
+        </button>
+        <button
+          className={`flex-1 flex items-center justify-center py-2 px-1 text-xs font-medium
+            ${mode === 'extensions' 
+              ? 'bg-gray-800 text-white border-b-2 border-blue-500' 
+              : 'text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          onClick={() => setMode('extensions')}
+          title="Extensions (Ctrl+Shift+X)"
+        >
+          <Package size={12} className="mr-1" />
+          EXT
         </button>
       </div>
 
@@ -117,6 +134,12 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           <GitPanel
             files={files}
             onFileSelect={onFileSelect}
+            onClose={() => setMode('explorer')}
+          />
+        )}
+        
+        {mode === 'extensions' && (
+          <ExtensionsPanel
             onClose={() => setMode('explorer')}
           />
         )}

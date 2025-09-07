@@ -5,6 +5,7 @@ import { MainEditor } from './panels/MainEditor';
 import { RightPanel } from './panels/RightPanel';
 import { BottomTerminal } from './layout/BottomTerminal';
 import { StatusBar } from './layout/StatusBar';
+import { ResizablePanelGroup } from './ResizablePanelGroup';
 import { useFileManager } from '../hooks/useFileManager';
 import { usePanelState } from '../hooks/usePanelState';
 
@@ -17,52 +18,63 @@ export const AppShell: React.FC = () => {
       {/* Header */}
       <AppHeader />
       
-      {/* Main Content */}
+      {/* Main Content - Трехколоночная структура */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
+        {/* Left Column - File Sidebar */}
         {panelState.leftVisible && (
-          <LeftSidebar
-            files={fileManager.fileTree}
-            selectedFileId={fileManager.selectedFileId}
-            onFileSelect={fileManager.openFile}
-            onFileCreate={(parentId, name, type) => {
-              if (type === 'file') {
-                fileManager.createFile(parentId, name);
-              } else {
-                fileManager.createFolder(parentId, name);
-              }
-            }}
-            onFileRename={fileManager.renameFile}
-            onFileDelete={fileManager.deleteFile}
-            onSearchQuery={fileManager.setSearchQuery}
-          />
+          <div className="w-64 flex-shrink-0">
+            <LeftSidebar
+              files={fileManager.fileTree}
+              selectedFileId={fileManager.selectedFileId}
+              onFileSelect={fileManager.openFile}
+              onFileCreate={(parentId, name, type) => {
+                if (type === 'file') {
+                  fileManager.createFile(parentId, name);
+                } else {
+                  fileManager.createFolder(parentId, name);
+                }
+              }}
+              onFileRename={fileManager.renameFile}
+              onFileDelete={fileManager.deleteFile}
+              onSearchQuery={fileManager.setSearchQuery}
+            />
+          </div>
         )}
         
-        {/* Main Editor Area */}
-        <div className="flex-1 flex flex-col">
-          <MainEditor
-            openTabs={fileManager.openTabs}
-            activeTab={fileManager.activeTab}
-            closeTab={fileManager.closeTab}
-            setActiveTab={fileManager.setActiveTab}
-            updateFileContent={fileManager.updateFileContent}
-          />
+        {/* Center Column - Main Editor + Terminal */}
+        <div className="flex-1 min-w-0">
+          <ResizablePanelGroup
+            direction="vertical"
+            bottomHeight={panelState.bottomHeight}
+            onBottomResize={panelState.setBottomHeight}
+            bottomVisible={panelState.bottomVisible}
+          >
+            {/* Main Editor */}
+            <MainEditor
+              openTabs={fileManager.openTabs}
+              activeTab={fileManager.activeTab}
+              closeTab={fileManager.closeTab}
+              setActiveTab={fileManager.setActiveTab}
+              reorderTabs={fileManager.reorderTabs}
+              updateFileContent={fileManager.updateFileContent}
+            />
+            
+            {/* Bottom Terminal - только в центральной колонке */}
+            <BottomTerminal
+              height={panelState.bottomHeight}
+              onToggle={() => panelState.setBottomVisible(!panelState.bottomVisible)}
+              onResize={panelState.setBottomHeight}
+            />
+          </ResizablePanelGroup>
         </div>
         
-        {/* Right Panel */}
+        {/* Right Column - AI Assistant */}
         {panelState.rightVisible && (
-          <RightPanel />
+          <div className="w-80 flex-shrink-0">
+            <RightPanel />
+          </div>
         )}
       </div>
-      
-      {/* Bottom Terminal */}
-      {panelState.bottomVisible && (
-        <BottomTerminal
-          height={panelState.bottomHeight}
-          onToggle={() => panelState.setBottomVisible(!panelState.bottomVisible)}
-          onResize={(height: number) => panelState.setBottomHeight(height)}
-        />
-      )}
       
       {/* Status Bar */}
       <StatusBar 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Plus } from 'lucide-react';
+import { TabBar } from '../TabBar';
 import { MonacoEditor } from '../MonacoEditor';
 import type { TabItem } from '../../types';
 
@@ -8,6 +8,7 @@ interface MainEditorProps {
   activeTab: TabItem | null;
   closeTab: (id: string) => void;
   setActiveTab: (id: string) => void;
+  reorderTabs: (fromIndex: number, toIndex: number) => void;
   updateFileContent: (fileId: string, content: string) => void;
 }
 
@@ -16,61 +17,19 @@ export const MainEditor: React.FC<MainEditorProps> = ({
   activeTab,
   closeTab,
   setActiveTab,
+  reorderTabs,
   updateFileContent
 }) => {
   return (
     <div className="flex flex-col h-full bg-gray-900">
-      {/* Tab Bar */}
-      <div className="flex bg-gray-800 border-b border-gray-700 min-h-[40px]">
-        <div className="flex flex-1 overflow-x-auto">
-          {openTabs.map((tab) => (
-            <div
-              key={tab.id}
-              className={`group flex items-center px-3 py-2 border-r border-gray-700 cursor-pointer min-w-0 max-w-[200px]
-                ${tab.id === activeTab?.id 
-                  ? 'bg-gray-900 text-white border-t-2 border-t-blue-500' 
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                }`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {/* File Icon */}
-              <div className="mr-2 flex-shrink-0">
-                <div className="w-4 h-4 bg-blue-500 rounded-sm flex items-center justify-center text-xs text-white">
-                  {tab.name.split('.').pop()?.charAt(0)?.toUpperCase() || 'F'}
-                </div>
-              </div>
-              
-              {/* File Name */}
-              <span className="truncate text-sm mr-2">{tab.name}</span>
-              
-              {/* Modified Indicator */}
-              {tab.modified && (
-                <div className="w-2 h-2 bg-white rounded-full mr-1 flex-shrink-0" />
-              )}
-              
-              {/* Close Button */}
-              <button
-                className="ml-auto opacity-0 group-hover:opacity-100 hover:bg-gray-600 rounded p-0.5 flex-shrink-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  closeTab(tab.id);
-                }}
-                aria-label="Close tab"
-              >
-                <X size={14} />
-              </button>
-            </div>
-          ))}
-        </div>
-        
-        {/* New Tab Button */}
-        <button
-          className="px-3 py-2 text-gray-400 hover:text-white hover:bg-gray-700"
-          aria-label="New tab"
-        >
-          <Plus size={16} />
-        </button>
-      </div>
+      {/* Enhanced Tab Bar */}
+      <TabBar
+        tabs={openTabs}
+        activeTabId={activeTab?.id || null}
+        onTabSelect={setActiveTab}
+        onTabClose={closeTab}
+        onTabsReorder={reorderTabs}
+      />
 
       {/* Editor Content */}
       <div className="flex-1 relative">
@@ -86,6 +45,11 @@ export const MainEditor: React.FC<MainEditorProps> = ({
               <div className="text-6xl mb-4">📝</div>
               <h2 className="text-xl mb-2">Welcome to iCoder Plus</h2>
               <p className="text-gray-500">Open a file to start editing</p>
+              <div className="mt-4 text-sm text-gray-600">
+                <p>💡 Tip: Right-click on tabs for more options</p>
+                <p>🖱️ Middle-click to close tabs quickly</p>
+                <p>📂 Drag tabs to reorder them</p>
+              </div>
             </div>
           </div>
         )}

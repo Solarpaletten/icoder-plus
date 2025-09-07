@@ -17,7 +17,7 @@ export function usePanelState() {
   const [panelState, setPanelState] = useState<PanelState>({
     leftWidth: 280,
     rightWidth: 350,
-    bottomHeight: 200,
+    bottomHeight: 250, // Increased default height
     isLeftCollapsed: false,
     isRightCollapsed: false,
     isBottomCollapsed: false,
@@ -56,7 +56,13 @@ export function usePanelState() {
   }, []);
 
   const setBottomHeight = useCallback((height: number) => {
-    setPanelState(prev => ({ ...prev, bottomHeight: Math.max(80, Math.min(400, height)) }));
+    // VS Code style limits: минимум 80px, максимум вычисляется динамически
+    const windowHeight = window.innerHeight;
+    const maxHeight = (windowHeight - 150) * 0.95; // 95% от доступной высоты
+    const minHeight = 80;
+    
+    const clampedHeight = Math.max(minHeight, Math.min(maxHeight, height));
+    setPanelState(prev => ({ ...prev, bottomHeight: clampedHeight }));
   }, []);
 
   const setLeftWidth = useCallback((width: number) => {

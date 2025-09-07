@@ -82,23 +82,40 @@ export function useFileManager() {
   }, [openTabs]);
 
   const closeTab = useCallback((tabId: string) => {
-    setOpenTabs(prev => prev.filter(tab => tab.id !== tabId));
-    setActiveTab(prev => {
-      if (prev?.id === tabId) {
-        const remainingTabs = openTabs.filter(tab => tab.id !== tabId);
-        return remainingTabs.length > 0 ? remainingTabs[remainingTabs.length - 1] : null;
+    setOpenTabs(prev => {
+      const filtered = prev.filter(tab => tab.id !== tabId);
+      
+      // If closing active tab, select another one
+      if (activeTab?.id === tabId) {
+        const currentIndex = prev.findIndex(tab => tab.id === tabId);
+        if (filtered.length > 0) {
+          const nextTab = filtered[Math.min(currentIndex, filtered.length - 1)];
+          setActiveTab(nextTab);
+        } else {
+          setActiveTab(null);
+        }
       }
-      return prev;
+      
+      return filtered;
     });
-  }, [openTabs]);
+  }, [activeTab]);
 
-  // Исправленный setActiveTab - принимает string (id) вместо TabItem
   const setActiveTabById = useCallback((tabId: string) => {
     const tab = openTabs.find(t => t.id === tabId);
     if (tab) {
       setActiveTab(tab);
     }
   }, [openTabs]);
+
+  // NEW: Reorder tabs functionality
+  const reorderTabs = useCallback((fromIndex: number, toIndex: number) => {
+    setOpenTabs(prev => {
+      const newTabs = [...prev];
+      const [movedTab] = newTabs.splice(fromIndex, 1);
+      newTabs.splice(toIndex, 0, movedTab);
+      return newTabs;
+    });
+  }, []);
 
   const updateFileContent = useCallback((fileId: string, content: string) => {
     setOpenTabs(prev => prev.map(tab => 
@@ -130,12 +147,13 @@ export function useFileManager() {
     searchQuery,
     selectedFileId,
     
-    // Actions - правильные типы для MainEditor
+    // Actions
     createFile,
     createFolder,
     openFile,
     closeTab,
-    setActiveTab: setActiveTabById, // Теперь принимает string
+    setActiveTab: setActiveTabById,
+    reorderTabs, // NEW
     updateFileContent,
     setSearchQuery,
     renameFile,

@@ -1,0 +1,21 @@
+/* Terminal resize cursor styles */
+.cursor-ns-resize {
+  cursor: ns-resize;
+}
+
+.cursor-ns-resize:active {
+  cursor: ns-resize;
+}
+
+/* Smooth transitions for terminal resize */
+.terminal-transition {
+  transition: height 0.1s ease-out;
+}
+
+/* Prevent text selection during drag */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}

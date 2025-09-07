@@ -1,59 +1,45 @@
 import React from 'react';
-import { Wifi, GitBranch, AlertCircle, CheckCircle } from 'lucide-react';
+import { GitBranch, Check, AlertCircle, Wifi } from 'lucide-react';
 
 interface StatusBarProps {
-  isCollapsed?: boolean;
-  onToggle?: () => void;
+  isCollapsed: boolean;
+  onToggle: () => void;
 }
 
-export const StatusBar: React.FC<StatusBarProps> = ({ 
-  isCollapsed = false, 
-  onToggle = () => {} 
-}) => {
-  if (isCollapsed) {
-    return (
-      <div 
-        className="h-1 bg-blue-500 cursor-pointer hover:bg-blue-400 transition-colors"
-        onClick={onToggle}
-        title="Expand status bar"
-      />
-    );
-  }
-
+export const StatusBar: React.FC<StatusBarProps> = ({ isCollapsed, onToggle }) => {
+  if (isCollapsed) return null;
+  
   return (
-    <div className="h-6 bg-blue-600 text-white text-xs flex items-center justify-between px-3">
-      {/* Left Section */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-1">
-          <CheckCircle size={12} className="text-green-300" />
-          <span>Backend Connected</span>
-        </div>
-        
-        <div className="flex items-center gap-1">
+    <div className="h-6 bg-blue-600 flex items-center justify-between px-4 text-xs text-white">
+      <div className="flex items-center space-x-4">
+        {/* Git Branch */}
+        <div className="flex items-center space-x-1 hover:bg-blue-700 px-2 py-1 rounded cursor-pointer">
           <GitBranch size={12} />
           <span>main</span>
         </div>
         
-        <div className="flex items-center gap-1">
-          <Wifi size={12} />
-          <span>api.icoder.swapoil.de</span>
+        {/* Git Status */}
+        <div className="flex items-center space-x-1">
+          <Check size={12} className="text-green-300" />
+          <span>Clean</span>
         </div>
-      </div>
-
-      {/* Right Section */}
-      <div className="flex items-center gap-4">
+        
+        {/* Connection Status */}
+        <div className="flex items-center space-x-1">
+          <Wifi size={12} className="text-green-300" />
+          <span>Connected</span>
+        </div>
+        
         <span>TypeScript</span>
         <span>UTF-8</span>
-        <span>LF</span>
+      </div>
+      <div className="flex items-center space-x-4">
         <span>Ln 1, Col 1</span>
-        
-        <button 
-          onClick={onToggle}
-          className="hover:bg-blue-700 px-1 rounded"
-          title="Collapse status bar"
-        >
-          ×
-        </button>
+        <span>Spaces: 2</span>
+        <div className="flex items-center space-x-1">
+          <AlertCircle size={12} />
+          <span>0 errors</span>
+        </div>
       </div>
     </div>
   );

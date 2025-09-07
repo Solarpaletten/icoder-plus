@@ -1,3 +1,11 @@
+#!/bin/bash
+
+echo "🔧 FIX APPSHELL IMPORTS"
+echo "======================="
+echo "Цель: Исправить импорты в AppShell.tsx согласно текущей структуре"
+
+# Исправить импорты в AppShell.tsx
+cat > src/components/AppShell.tsx << 'EOF'
 import React from 'react';
 import { AppHeader } from './layout/AppHeader';
 import { LeftSidebar } from './panels/LeftSidebar';
@@ -88,3 +96,23 @@ export const AppShell: React.FC = () => {
     </div>
   );
 };
+EOF
+
+echo "✅ AppShell.tsx исправлен с правильными импортами"
+echo "✅ RightPanel импортируется из panels/"
+echo "✅ BottomTerminal импортируется из layout/"
+
+# Тестируем сборку
+echo "🧪 Тестируем исправления импортов..."
+npm run build
+
+if [ $? -eq 0 ]; then
+  echo ""
+  echo "🎉 ИМПОРТЫ ИСПРАВЛЕНЫ!"
+  echo "🏆 AppShell.tsx компилируется без ошибок!"
+  echo ""
+  echo "🚀 Запустите: npm run dev"
+  echo "🔍 Нажмите Ctrl+Shift+F для тестирования поиска!"
+else
+  echo "❌ Остались ошибки - проверьте консоль"
+fi

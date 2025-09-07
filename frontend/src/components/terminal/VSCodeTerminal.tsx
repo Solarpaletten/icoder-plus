@@ -49,16 +49,14 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
 
-  // Расширенная mock файловая система
+  // Mock file system for autocomplete
   const mockFileSystem = {
-    '~/projects/icoder-plus': ['src', 'package.json', 'README.md', 'node_modules', 'dist', '.git', 'vite.config.ts', 'tsconfig.json', '.gitignore', 'index.html'],
-    '~/projects/icoder-plus/src': ['components', 'hooks', 'utils', 'App.tsx', 'main.tsx', 'index.css', 'types.ts'],
-    '~/projects/icoder-plus/src/components': ['terminal', 'layout', 'panels', 'AppShell.tsx', 'Editor.tsx'],
-    '~/projects/icoder-plus/src/components/terminal': ['MultiTerminalManager.tsx', 'VSCodeTerminal.tsx', 'TerminalSidebar.tsx', 'TerminalHeader.tsx', 'ResizableTerminalContainer.tsx'],
+    '~/projects/icoder-plus': ['src', 'package.json', 'README.md', 'node_modules', 'dist', '.git'],
+    '~/projects/icoder-plus/src': ['components', 'hooks', 'utils', 'App.tsx', 'main.tsx'],
+    '~/projects/icoder-plus/src/components': ['terminal', 'layout', 'panels', 'AppShell.tsx'],
+    '~/projects/icoder-plus/src/components/terminal': ['MultiTerminalManager.tsx', 'VSCodeTerminal.tsx', 'TerminalSidebar.tsx'],
     '~/projects/icoder-plus/src/components/layout': ['AppHeader.tsx', 'BottomTerminal.tsx', 'StatusBar.tsx'],
-    '~/projects/icoder-plus/src/components/panels': ['LeftSidebar.tsx', 'MainEditor.tsx', 'RightPanel.tsx'],
-    '~/projects/icoder-plus/src/hooks': ['useFileManager.ts', 'usePanelState.ts'],
-    '~/projects/icoder-plus/src/utils': ['initialData.ts', 'constants.ts']
+    '~/projects/icoder-plus/src/components/panels': ['LeftSidebar.tsx', 'MainEditor.tsx', 'RightPanel.tsx']
   };
 
   useEffect(() => {
@@ -95,75 +93,40 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
     }
   };
 
-  const getFileAutocompleteSuggestions = (command: string, prefix: string): string[] => {
-    const currentDirFiles = mockFileSystem[currentDirectory as keyof typeof mockFileSystem] || [];
-    
-    return currentDirFiles
-      .filter(item => item.startsWith(prefix))
-      .map(item => `${command} ${item}`);
-  };
-
   const getAutocompleteSuggestions = (input: string): string[] => {
     const trimmedInput = input.trim();
     
     // Command completion
     const commands = shell === 'node' ? ['.help', '.exit', '.clear'] :
-                    shell === 'git' ? ['status', 'log', 'branch', 'add', 'commit', 'push', 'pull', 'checkout', 'merge', 'clone', 'fetch'] :
-                    ['ls', 'cd', 'pwd', 'mkdir', 'rm', 'cp', 'mv', 'cat', 'grep', 'find', 'npm', 'yarn', 'git', 'code', 'nano', 'touch', 'chmod', 'curl', 'wget'];
+                    shell === 'git' ? ['status', 'log', 'branch', 'add', 'commit', 'push', 'pull', 'checkout', 'merge'] :
+                    ['ls', 'cd', 'pwd', 'mkdir', 'rm', 'cp', 'mv', 'cat', 'grep', 'find', 'npm', 'yarn', 'git', 'code', 'nano'];
     
     // If input is just a command prefix, suggest commands
     if (!trimmedInput.includes(' ')) {
       return commands.filter(cmd => cmd.startsWith(trimmedInput));
     }
     
-    const parts = trimmedInput.split(' ');
-    const command = parts[0];
-    const lastPart = parts[parts.length - 1];
-    
     // Directory/file completion for cd command
-    if (command === 'cd') {
+    if (trimmedInput.startsWith('cd ')) {
+      const pathPrefix = trimmedInput.slice(3);
       const currentDirFiles = mockFileSystem[currentDirectory as keyof typeof mockFileSystem] || [];
-      const directories = ['..', '~', ...currentDirFiles.filter(item => !item.includes('.'))]; // предполагаем что файлы содержат точки
       
-      return directories
-        .filter(item => item.startsWith(lastPart))
+      return currentDirFiles
+        .filter(item => item.startsWith(pathPrefix))
         .map(item => `cd ${item}`);
     }
     
-    // File completion for file-based commands
-    if (['cat', 'less', 'more', 'head', 'tail', 'nano', 'code', 'vim'].includes(command)) {
-      return getFileAutocompleteSuggestions(command, lastPart);
-    }
-    
-    // File/directory completion for file operations
-    if (['rm', 'mv', 'cp', 'chmod', 'touch'].includes(command)) {
-      return getFileAutocompleteSuggestions(command, lastPart);
-    }
-    
-    // Git specific file completion
-    if (shell === 'git' || command === 'git') {
-      if (parts.length >= 2) {
-        const gitCommand = parts[1];
-        if (['add', 'rm', 'mv'].includes(gitCommand)) {
-          return getFileAutocompleteSuggestions(`git ${gitCommand}`, lastPart);
-        }
-      }
-    }
-    
-    // NPM/Yarn script completion
-    if (['npm', 'yarn'].includes(command) && parts.length >= 2) {
-      const npmCommands = ['run', 'install', 'build', 'dev', 'start', 'test', 'lint'];
-      const scripts = ['dev', 'build', 'preview', 'lint', 'test'];
+    // File completion for other commands
+    if (trimmedInput.match(/^(ls|cat|rm|mv|cp|nano|code)\s+/)) {
+      const parts = trimmedInput.split(' ');
+      const command = parts[0];
+      const pathPrefix = parts[parts.length - 1] || '';
       
-      if (parts[1] === 'run' && parts.length === 3) {
-        return scripts
-          .filter(script => script.startsWith(lastPart))
-          .map(script => `${command} run ${script}`);
-      } else if (parts.length === 2) {
-        return npmCommands
-          .filter(cmd => cmd.startsWith(lastPart))
-          .map(cmd => `${command} ${cmd}`);
-      }
+      const currentDirFiles = mockFileSystem[currentDirectory as keyof typeof mockFileSystem] || [];
+      
+      return currentDirFiles
+        .filter(item => item.startsWith(pathPrefix))
+        .map(item => `${command} ${item}`);
     }
     
     return [];
@@ -171,13 +134,6 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      if (suggestionIndex >= 0 && suggestions[suggestionIndex]) {
-        setInput(suggestions[suggestionIndex]);
-        setSuggestions([]);
-        setSuggestionIndex(-1);
-        return;
-      }
-
       if (input.trim()) {
         const command = input.trim();
         const newHistory = [...history, `${getShellPrompt()} ${command}`];
@@ -203,14 +159,12 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
           if (command.startsWith('git status')) {
             newHistory.push('On branch main');
             newHistory.push('Your branch is up to date with \'origin/main\'.');
-            newHistory.push('Changes not staged for commit:');
-            newHistory.push('  modified:   src/components/terminal/VSCodeTerminal.tsx');
-            newHistory.push('  modified:   src/components/terminal/TerminalSidebar.tsx');
+            newHistory.push('nothing to commit, working tree clean');
           } else if (command.startsWith('git log')) {
             newHistory.push('commit a1b2c3d4e5f6g7h8i9j0 (HEAD -> main, origin/main)');
             newHistory.push('Author: Developer <dev@icoder.plus>');
             newHistory.push('Date:   Mon Sep 7 12:00:00 2025 +0300');
-            newHistory.push('    Phase 4.7: Terminal Autocomplete Fix');
+            newHistory.push('    Phase 4.6: Terminal Creation & Autocomplete');
           } else if (command.startsWith('git branch')) {
             newHistory.push('* main');
             newHistory.push('  feature/terminal-autocomplete');
@@ -243,20 +197,6 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
               } else {
                 newHistory.push(`cd: no such file or directory: ${targetDir}`);
               }
-            }
-          } else if (command.startsWith('cat ')) {
-            const fileName = command.slice(4).trim();
-            const currentDirFiles = mockFileSystem[currentDirectory as keyof typeof mockFileSystem] || [];
-            if (currentDirFiles.includes(fileName)) {
-              if (fileName === 'package.json') {
-                newHistory.push('{\n  "name": "icoder-plus-frontend",\n  "version": "2.0.0",\n  "type": "module"\n}');
-              } else if (fileName === 'README.md') {
-                newHistory.push('# iCoder Plus\n\nA professional IDE built with React, TypeScript, and Monaco Editor.');
-              } else {
-                newHistory.push(`Contents of ${fileName}...`);
-              }
-            } else {
-              newHistory.push(`cat: ${fileName}: No such file or directory`);
             }
           } else if (command === 'clear') {
             setHistory([]);
@@ -447,7 +387,7 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
         
         {/* Autocomplete Suggestions */}
         {suggestions.length > 0 && (
-          <div className="absolute bottom-8 left-2 bg-gray-800 border border-gray-600 rounded shadow-lg z-20 min-w-[200px] max-w-[400px]">
+          <div className="absolute bottom-8 left-2 bg-gray-800 border border-gray-600 rounded shadow-lg z-20 min-w-[200px]">
             {suggestions.map((suggestion, index) => (
               <button
                 key={index}
@@ -462,9 +402,6 @@ export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({
                 {suggestion}
               </button>
             ))}
-            <div className="px-3 py-1 text-xs text-gray-500 border-t border-gray-600">
-              Press Tab to complete • ↑↓ to navigate
-            </div>
           </div>
         )}
       </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Square, ChevronRight, ChevronDown } from 'lucide-react';
+import { Plus, X, Square, GitBranch, Maximize2, ChevronRight, ChevronDown } from 'lucide-react';
 
 interface TerminalInstance {
   id: string;
@@ -26,6 +26,7 @@ export const TerminalSidebar: React.FC<TerminalSidebarProps> = ({
   isCollapsed,
   activeTerminalId,
   onTerminalSelect,
+  onTerminalCreate,
   onTerminalClose,
   onTerminalSplit,
   onToggleCollapse
@@ -77,6 +78,14 @@ export const TerminalSidebar: React.FC<TerminalSidebarProps> = ({
               <div className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${getStatusColor(terminal.status)}`} />
             </button>
           ))}
+          
+          <button
+            onClick={() => onTerminalCreate()}
+            className="w-8 h-8 rounded bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-gray-300 hover:text-white transition-colors mt-2"
+            title="New Terminal"
+          >
+            <Plus size={12} />
+          </button>
         </div>
       </div>
     );
@@ -94,6 +103,14 @@ export const TerminalSidebar: React.FC<TerminalSidebarProps> = ({
         </div>
         
         <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            onClick={() => onTerminalCreate()}
+            className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
+            title="New Terminal"
+          >
+            <Plus size={12} />
+          </button>
+          
           <button
             onClick={onToggleCollapse}
             className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
@@ -178,10 +195,21 @@ export const TerminalSidebar: React.FC<TerminalSidebarProps> = ({
         ))}
       </div>
 
-      {/* Footer - Info Only */}
-      <div className="border-t border-gray-700 p-3 flex-shrink-0">
-        <div className="text-xs text-gray-500 text-center">
-          Use "New Terminal" button to create new terminals
+      {/* Footer - Quick Actions */}
+      <div className="border-t border-gray-700 p-2 flex-shrink-0">
+        <div className="text-xs text-gray-500 mb-2">SHELL TYPES</div>
+        <div className="grid grid-cols-2 gap-1">
+          {(['bash', 'zsh', 'powershell', 'node'] as const).map(shell => (
+            <button
+              key={shell}
+              onClick={() => onTerminalCreate(shell)}
+              className="p-2 text-xs bg-gray-700 hover:bg-gray-600 rounded flex items-center gap-1 text-gray-300 hover:text-white transition-colors"
+              title={`New ${shell} Terminal`}
+            >
+              <span className="flex-shrink-0">{getShellIcon(shell)}</span>
+              <span className="capitalize truncate">{shell}</span>
+            </button>
+          ))}
         </div>
       </div>
     </div>

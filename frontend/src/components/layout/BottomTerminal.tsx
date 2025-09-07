@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Maximize2, Minimize2, X, ChevronUp, ChevronDown } from 'lucide-react';
-import { VSCodeTerminal } from '../VSCodeTerminal';
+import { Maximize2, Minimize2, X, ChevronUp, ChevronDown, Terminal } from 'lucide-react';
+import { MultiTerminalManager } from '../MultiTerminalManager';
 
 interface BottomTerminalProps {
   height: number;
@@ -20,8 +20,8 @@ export const BottomTerminal: React.FC<BottomTerminalProps> = ({
       onResize(250); // Restore to default
       setIsMaximized(false);
     } else {
-      // Calculate 90% of parent container height (almost full screen like VS Code)
-      const parentHeight = window.innerHeight - 100; // Subtract header + status bar
+      // Calculate 90% of parent container height
+      const parentHeight = window.innerHeight - 100;
       const maxHeight = Math.floor(parentHeight * 0.9);
       onResize(maxHeight);
       setIsMaximized(true);
@@ -40,6 +40,7 @@ export const BottomTerminal: React.FC<BottomTerminalProps> = ({
       {/* Terminal Header */}
       <div className="h-8 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-3 flex-shrink-0">
         <div className="flex items-center gap-2">
+          <Terminal size={14} className="text-gray-400" />
           <span className="text-sm font-medium text-gray-300">TERMINAL</span>
           <div className="w-2 h-2 bg-green-500 rounded-full" title="Connected" />
           <span className="text-xs text-gray-500">
@@ -83,12 +84,9 @@ export const BottomTerminal: React.FC<BottomTerminalProps> = ({
         </div>
       </div>
       
-      {/* Terminal Content */}
+      {/* Multi Terminal Content */}
       <div className="flex-1 overflow-hidden">
-        <VSCodeTerminal 
-          isVisible={true}
-          height={height - 32} // Subtract header height
-        />
+        <MultiTerminalManager height={height - 32} />
       </div>
     </div>
   );

@@ -1,183 +1,239 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface VSCodeTerminalProps {
-  isVisible: boolean;
-  height: number;
+  isVisible?: boolean;
+  height?: number;
 }
 
-export function VSCodeTerminal({ isVisible, height }: VSCodeTerminalProps) {
-  const [lines, setLines] = useState<string[]>(['Connected to bash terminal!', '']);
-  const [currentInput, setCurrentInput] = useState('');
-  const [isConnected, setIsConnected] = useState(false);
-  const [currentDir, setCurrentDir] = useState('~');
-  const wsRef = useRef<WebSocket | null>(null);
+export const VSCodeTerminal: React.FC<VSCodeTerminalProps> = ({ 
+  isVisible = true, 
+  height = 200 
+}) => {
+  const [history, setHistory] = useState<string[]>([
+    'Connected to bash terminal!',
+    ''
+  ]);
+  const [input, setInput] = useState('');
+  const [currentPath, setCurrentPath] = useState('~/projects/icoder-plus');
+  const [wsConnected, setWsConnected] = useState(false);
+  const [ws, setWs] = useState<WebSocket | null>(null);
+  const [commandHistory, setCommandHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // WebSocket connection
   useEffect(() => {
-    if (!isVisible) return;
+    const connectWebSocket = () => {
+      try {
+        const websocket = new WebSocket('ws://localhost:3000/terminal');
+        
+        websocket.onopen = () => {
+          console.log('Terminal WebSocket connected');
+          setWsConnected(true);
+          setHistory(prev => [...prev, '🟢 Connected to backend terminal']);
+        };
 
-    // WebSocket подключение
-    const ws = new WebSocket('ws://localhost:3000/terminal');
-    wsRef.current = ws;
+        websocket.onmessage = (event) => {
+          const data = event.data;
+          setHistory(prev => [...prev, data]);
+        };
 
-    ws.onopen = () => {
-      setIsConnected(true);
-      setLines(['Connected to bash terminal!', '']);
-    };
+        websocket.onclose = () => {
+          console.log('Terminal WebSocket disconnected');
+          setWsConnected(false);
+          setHistory(prev => [...prev, '🔴 Disconnected from backend - using demo mode']);
+        };
 
-    ws.onmessage = (event) => {
-      const data: string = event.data;
-      
-      // Обработка вывода от сервера
-      if (data.includes('$')) {
-        // Это промпт - извлекаем текущую директорию
-        const parts = data.split('$');
-        if (parts[0].trim()) {
-          const dirMatch = parts[0].match(/([^/\s]+)?\s*\$?\s*$/);
-          if (dirMatch) {
-            setCurrentDir(dirMatch[1] || '~');
-          }
-        }
+        websocket.onerror = (error) => {
+          console.log('Terminal WebSocket error:', error);
+          setWsConnected(false);
+        };
+
+        setWs(websocket);
+      } catch (error) {
+        console.log('Failed to connect WebSocket:', error);
+        setWsConnected(false);
       }
-
-      // Добавляем вывод к строкам
-      const newLines: string[] = data.split('\n');
-      setLines(prev => {
-        const updated = [...prev];
-        
-        // Добавляем каждую строку - ИСПРАВЛЕНА ТИПИЗАЦИЯ
-        newLines.forEach((line: string, index: number) => {
-          if (index === 0) {
-            // Первая строка добавляется к последней существующей
-            updated[updated.length - 1] += line;
-          } else {
-            // Остальные строки добавляются как новые
-            updated.push(line);
-          }
-        });
-        
-        return updated;
-      });
-
-      // Автоскролл
-      setTimeout(() => {
-        if (terminalRef.current) {
-          terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
-        }
-      }, 10);
     };
 
-    ws.onclose = () => {
-      setIsConnected(false);
-      setLines(prev => [...prev, 'Connection closed']);
-    };
-
-    ws.onerror = () => {
-      setIsConnected(false);
-      setLines(prev => [...prev, 'Connection error']);
-    };
+    connectWebSocket();
 
     return () => {
-      ws.close();
+      if (ws) {
+        ws.close();
+      }
     };
-  }, [isVisible]);
+  }, []);
 
-  const executeCommand = () => {
-    if (!currentInput.trim() || !wsRef.current || !isConnected) return;
+  // Auto scroll to bottom
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [history]);
 
-    // Добавляем команду в вывод
-    setLines(prev => [...prev, `${currentDir}$ ${currentInput}`, '']);
+  // Focus input when terminal is clicked
+  const handleTerminalClick = () => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
 
-    // Отправляем команду на сервер
-    wsRef.current.send(currentInput + '\r');
+  const executeCommand = (command: string) => {
+    const trimmedCommand = command.trim();
     
-    // Очищаем ввод
-    setCurrentInput('');
+    // Add to command history
+    if (trimmedCommand && !commandHistory.includes(trimmedCommand)) {
+      setCommandHistory(prev => [trimmedCommand, ...prev].slice(0, 50)); // Keep last 50 commands
+    }
+    setHistoryIndex(-1);
+    
+    // Add command to history
+    setHistory(prev => [...prev, `${currentPath}$ ${trimmedCommand}`]);
+
+    if (wsConnected && ws) {
+      // Send to backend
+      ws.send(trimmedCommand + '\r');
+    } else {
+      // Demo mode
+      handleDemoCommand(trimmedCommand);
+    }
+
+    setInput('');
+  };
+
+  const handleDemoCommand = (command: string) => {
+    switch (command.toLowerCase()) {
+      case 'help':
+        setHistory(prev => [...prev, 
+          'Available commands:',
+          '  help    - Show this help',
+          '  clear   - Clear terminal',
+          '  ls      - List files',
+          '  pwd     - Current directory',
+          '  whoami  - Current user',
+          '  date    - Current date/time',
+          '  status  - System status',
+          ''
+        ]);
+        break;
+      
+      case 'clear':
+        setHistory(['']);
+        break;
+      
+      case 'ls':
+        setHistory(prev => [...prev, 
+          'src/',
+          'package.json',
+          'README.md',
+          'tsconfig.json',
+          ''
+        ]);
+        break;
+      
+      case 'pwd':
+        setHistory(prev => [...prev, currentPath, '']);
+        break;
+      
+      case 'whoami':
+        setHistory(prev => [...prev, 'developer', '']);
+        break;
+      
+      case 'date':
+        setHistory(prev => [...prev, new Date().toString(), '']);
+        break;
+      
+      case 'status':
+        setHistory(prev => [...prev, 
+          '🔵 Frontend: Running (localhost:5173)',
+          wsConnected ? '🟢 Backend: Connected (localhost:3000)' : '🔴 Backend: Disconnected',
+          '📁 Project: iCoder Plus v2.0',
+          ''
+        ]);
+        break;
+      
+      case '':
+        setHistory(prev => [...prev, '']);
+        break;
+      
+      default:
+        setHistory(prev => [...prev, `Command not found: ${command}`, '']);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
+      executeCommand(input);
+    } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      executeCommand();
-    } else if (e.ctrlKey && e.key === 'c') {
-      e.preventDefault();
-      if (wsRef.current && isConnected) {
-        wsRef.current.send('\x03');
-        setLines(prev => [...prev, '^C', '']);
-        setCurrentInput('');
+      if (commandHistory.length > 0) {
+        const newIndex = Math.min(historyIndex + 1, commandHistory.length - 1);
+        setHistoryIndex(newIndex);
+        setInput(commandHistory[newIndex] || '');
       }
-    } else if (e.ctrlKey && e.key === 'l') {
+    } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setLines(['']);
-      setCurrentInput('');
+      if (historyIndex > 0) {
+        const newIndex = historyIndex - 1;
+        setHistoryIndex(newIndex);
+        setInput(commandHistory[newIndex] || '');
+      } else {
+        setHistoryIndex(-1);
+        setInput('');
+      }
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      // Basic tab completion for demo
+      const commonCommands = ['help', 'clear', 'ls', 'pwd', 'whoami', 'date', 'status'];
+      const match = commonCommands.find(cmd => cmd.startsWith(input.toLowerCase()));
+      if (match) {
+        setInput(match);
+      }
     }
   };
 
-  // Фокус на input при клике в терминал
-  const handleTerminalClick = () => {
-    inputRef.current?.focus();
-  };
-
-  // Автофокус при монтировании
-  useEffect(() => {
-    if (isVisible && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isVisible]);
+  if (!isVisible) return null;
 
   return (
-    <div className="h-full flex flex-col bg-black text-green-400 font-mono">
-      {/* Заголовок */}
-      <div className="flex items-center justify-between px-3 py-1 bg-gray-800 text-white text-sm border-b border-gray-600">
-        <div className="flex items-center space-x-2">
-          <span className={`w-2 h-2 rounded-full ${
-            isConnected ? 'bg-green-400' : 'bg-red-400'
-          }`}></span>
-          <span>Terminal - {currentDir}</span>
-        </div>
-        <span className="text-gray-400 text-xs">
-          Ctrl+C: interrupt, Ctrl+L: clear
-        </span>
-      </div>
-
-      {/* Область терминала */}
+    <div 
+      className="bg-black text-gray-100 font-mono h-full flex flex-col overflow-hidden cursor-text"
+      onClick={handleTerminalClick}
+      style={{
+        fontSize: '12px',
+        lineHeight: '1.4',
+        fontFamily: 'Consolas, "Courier New", monospace'
+      }}
+    >
+      {/* Terminal Output */}
       <div 
         ref={terminalRef}
-        className="flex-1 p-3 overflow-y-auto cursor-text"
-        style={{ height: `${height - 80}px` }}
-        onClick={handleTerminalClick}
+        className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent"
+        style={{ fontSize: '12px' }}
       >
-        {/* Вывод всех строк */}
-        {lines.map((line: string, index: number) => (
-          <div key={index} className="leading-relaxed">
+        {history.map((line, index) => (
+          <div key={index} className="whitespace-pre-wrap leading-relaxed text-gray-100">
             {line}
           </div>
         ))}
         
-        {/* Текущая строка ввода */}
-        {isConnected && (
-          <div className="flex items-center">
-            <span className="mr-1">{currentDir}$</span>
-            <input
-              ref={inputRef}
-              type="text"
-              value={currentInput}
-              onChange={(e) => setCurrentInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="flex-1 bg-transparent outline-none text-green-400 caret-green-400"
-              style={{ minWidth: '10px' }}
-              autoComplete="off"
-              spellCheck={false}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Подсказки внизу */}
-      <div className="px-3 py-1 bg-gray-900 border-t border-gray-700 text-xs text-gray-500">
-        Try: pwd, ls, cd /tmp, whoami, ps aux, top
+        {/* Current Input Line */}
+        <div className="flex items-center mt-1">
+          <span className="text-green-400 text-xs mr-1">{currentPath}$</span>
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="flex-1 bg-transparent outline-none text-gray-100 text-xs"
+            style={{ fontFamily: 'inherit' }}
+            autoFocus
+            spellCheck={false}
+          />
+        </div>
       </div>
     </div>
   );
-}
+};

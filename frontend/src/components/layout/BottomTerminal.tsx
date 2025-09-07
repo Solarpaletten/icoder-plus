@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Maximize2, Minimize2, X, ChevronUp, ChevronDown, Terminal } from 'lucide-react';
-import { MultiTerminalManager } from '../MultiTerminalManager';
+import { MultiTerminalManager } from '../terminal/MultiTerminalManager';
 
 interface BottomTerminalProps {
   height: number;
@@ -17,10 +17,9 @@ export const BottomTerminal: React.FC<BottomTerminalProps> = ({
 
   const handleMaximize = () => {
     if (isMaximized) {
-      onResize(250); // Restore to default
+      onResize(250);
       setIsMaximized(false);
     } else {
-      // Calculate 90% of parent container height
       const parentHeight = window.innerHeight - 100;
       const maxHeight = Math.floor(parentHeight * 0.9);
       onResize(maxHeight);
@@ -49,7 +48,6 @@ export const BottomTerminal: React.FC<BottomTerminalProps> = ({
         </div>
         
         <div className="flex items-center gap-1">
-          {/* Quick resize buttons */}
           <button
             onClick={() => handleQuickResize(0.3)}
             className="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-white transition-colors"
